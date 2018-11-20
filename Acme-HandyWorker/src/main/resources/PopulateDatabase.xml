@@ -392,6 +392,28 @@
 			<list></list>
 		</property>
 	</bean>
+	
+	<bean id="admin0_box2" class="domain.Box">
+		<property name="name" value="TRASHBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="admin0_box3" class="domain.Box">
+		<property name="name" value="NOTIFICATIONBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
 
 	<!-- Referees Boxes -->
 	<bean id="referee0_box0" class="domain.Box">
@@ -409,6 +431,28 @@
 
 	<bean id="referee0_box1" class="domain.Box">
 		<property name="name" value="OUTBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="referee0_box2" class="domain.Box">
+		<property name="name" value="TRASHBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="referee0_box3" class="domain.Box">
+		<property name="name" value="NOTIFICATIONBOX" />
 		<property name="predefined" value="true" />
 		<property name="messages">
 			<list></list>
@@ -444,6 +488,28 @@
 		</property>
 	</bean>
 
+		<bean id="customer0_box2" class="domain.Box">
+		<property name="name" value="TRASHBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+		<bean id="customer0_box3" class="domain.Box">
+		<property name="name" value="NOTIFICATIONBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
 	<bean id="customer1_box0" class="domain.Box">
 		<property name="name" value="INBOX" />
 		<property name="predefined" value="true" />
@@ -459,6 +525,28 @@
 
 	<bean id="customer1_box1" class="domain.Box">
 		<property name="name" value="OUTBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="customer1_box2" class="domain.Box">
+		<property name="name" value="TRASHBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="customer1_box3" class="domain.Box">
+		<property name="name" value="NOTIFICATIONBOX" />
 		<property name="predefined" value="true" />
 		<property name="messages">
 			<list></list>
@@ -483,6 +571,28 @@
 
 	<bean id="customer2_box1" class="domain.Box">
 		<property name="name" value="OUTBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="customer2_box2" class="domain.Box">
+		<property name="name" value="TRASHBOX" />
+		<property name="predefined" value="true" />
+		<property name="messages">
+			<list></list>
+		</property>
+		<property name="children">
+			<list></list>
+		</property>
+	</bean>
+	
+	<bean id="customer2_box3" class="domain.Box">
+		<property name="name" value="NOTIFICATIONBOX" />
 		<property name="predefined" value="true" />
 		<property name="messages">
 			<list></list>
@@ -1200,6 +1310,8 @@
 			<list>
 				<ref bean="admin0_box0" />
 				<ref bean="admin0_box1" />
+				<ref bean="admin0_box2" />
+				<ref bean="admin0_box3" />
 			</list>
 		</property>
 	</bean>
@@ -1245,6 +1357,8 @@
 			<list>
 				<ref bean="referee0_box0" />
 				<ref bean="referee0_box1" />
+				<ref bean="referee0_box2" />
+				<ref bean="referee0_box3" />
 			</list>
 		</property>
 		<property name="reports">
@@ -1299,6 +1413,8 @@
 			<list>
 				<ref bean="customer0_box0" />
 				<ref bean="customer0_box1" />
+				<ref bean="customer0_box2" />
+				<ref bean="customer0_box3" />
 			</list>
 		</property>
 		<property name="fixUpTasks">
@@ -1338,6 +1454,8 @@
 			<list>
 				<ref bean="customer1_box0" />
 				<ref bean="customer1_box1" />
+				<ref bean="customer1_box2" />
+				<ref bean="customer1_box3" />
 			</list>
 		</property>
 		<property name="fixUpTasks">
