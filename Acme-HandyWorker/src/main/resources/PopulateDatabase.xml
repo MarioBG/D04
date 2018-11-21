@@ -322,49 +322,6 @@
 		</property>
 	</bean>
 
-	<!-- Messages -->
-
-	<bean id="message0" class="domain.Message">
-		<property name="moment" value="2018/11/11 12:37" />
-		<property name="subject" value="subject0" />
-		<property name="body" value="body0" />
-		<property name="priority" value="NEUTRAL" />
-		<property name="recipient" ref="admin0" />
-		<property name="sender" ref="admin0" />
-		<property name="box" ref="admin0_box0" />
-	</bean>
-
-	<bean id="message1" class="domain.Message">
-		<property name="moment" value="2018/10/11 12:37" />
-		<property name="subject" value="subject1" />
-		<property name="body" value="body1" />
-		<property name="priority" value="NEUTRAL" />
-		<property name="recipient" ref="referee0" />
-		<property name="sender" ref="referee0" />
-		<property name="box" ref="referee0_box0" />
-	</bean>
-
-	<bean id="message2" class="domain.Message">
-		<property name="moment" value="2018/11/11 11:37" />
-		<property name="subject" value="subject2" />
-		<property name="body" value="body2" />
-		<property name="priority" value="NEUTRAL" />
-		<property name="recipient" ref="customer0" />
-		<property name="sender" ref="customer0" />
-		<property name="box" ref="customer0_box0" />
-	</bean>
-
-	<bean id="message3" class="domain.Message">
-		<property name="moment" value="2018/10/11 11:37" />
-		<property name="subject" value="subject3" />
-		<property name="body" value="body3" />
-		<property name="priority" value="NEUTRAL" />
-		<property name="recipient" ref="customer0" />
-		<property name="sender" ref="customer1" />
-		<property name="box" ref="customer1_box0" />
-	</bean>
-
-
 	<!-- Boxes -->
 
 	<!-- Admin Boxes -->
@@ -515,7 +472,6 @@
 		<property name="predefined" value="true" />
 		<property name="messages">
 			<list>
-				<ref bean="message2" />
 			</list>
 		</property>
 		<property name="children">
@@ -561,7 +517,6 @@
 		<property name="predefined" value="true" />
 		<property name="messages">
 			<list>
-				<ref bean="message2" />
 			</list>
 		</property>
 		<property name="children">
@@ -600,6 +555,44 @@
 		<property name="children">
 			<list></list>
 		</property>
+	</bean>
+	
+	<!-- Messages -->
+
+	<bean id="message0" class="domain.Message">
+		<property name="moment" value="2018/11/11 12:37" />
+		<property name="subject" value="subject0" />
+		<property name="body" value="body0" />
+		<property name="priority" value="NEUTRAL" />
+		<property name="recipient" ref="admin0" />
+		<property name="sender" ref="admin0" />
+	</bean>
+
+	<bean id="message1" class="domain.Message">
+		<property name="moment" value="2018/10/11 12:37" />
+		<property name="subject" value="subject1" />
+		<property name="body" value="body1" />
+		<property name="priority" value="NEUTRAL" />
+		<property name="recipient" ref="referee0" />
+		<property name="sender" ref="referee0" />
+	</bean>
+
+	<bean id="message2" class="domain.Message">
+		<property name="moment" value="2018/11/11 11:37" />
+		<property name="subject" value="subject2" />
+		<property name="body" value="body2" />
+		<property name="priority" value="NEUTRAL" />
+		<property name="recipient" ref="customer0" />
+		<property name="sender" ref="customer0" />
+	</bean>
+
+	<bean id="message3" class="domain.Message">
+		<property name="moment" value="2018/10/11 11:37" />
+		<property name="subject" value="subject3" />
+		<property name="body" value="body3" />
+		<property name="priority" value="NEUTRAL" />
+		<property name="recipient" ref="customer0" />
+		<property name="sender" ref="customer1" />
 	</bean>
 
 	<!-- Personal Records -->
@@ -1550,7 +1543,7 @@
 			value="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThYg72q-7KxNoiVfWXHQp3VUvy0WwbBnJZfIM9LSefhVdEmNxa" />
 		<property name="phoneNumber" value="600000000" />
 		<property name="address" value="Seville" />
-		<property name="userAccount" ref="userAccount1" />
+		<property name="userAccount" ref="userAccount6" />
 		<property name="socialIdentity">
 			<list></list>
 		</property>

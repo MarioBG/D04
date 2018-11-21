@@ -121,7 +121,7 @@ public abstract class Actor extends DomainEntity {
 		this.socialIdentity = socialIdentity;
 	}
 
-	@OneToMany
+	@OneToMany(cascade = CascadeType.ALL)
 	public Collection<Box> getBoxes() {
 		return this.boxes;
 	}

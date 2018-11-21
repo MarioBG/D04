@@ -3,7 +3,9 @@ package domain;
 
 import java.util.Collection;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 
 import org.hibernate.validator.constraints.NotBlank;
@@ -39,7 +41,7 @@ public class Box extends DomainEntity {
 	private Collection<Box>		children;
 
 
-	@OneToMany(mappedBy = "box")
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	public Collection<Message> getMessages() {
 		return this.messages;
 	}
