@@ -11,7 +11,8 @@ import javax.persistence.spi.PersistenceProvider;
 
 import org.hibernate.jpa.HibernatePersistenceProvider;
 
-import domain.Message;
+import utilities.internal.ConsoleReader;
+import utilities.internal.SchemaPrinter;
 
 @SuppressWarnings("unchecked")
 public class FixUpTaskSearcher {
@@ -22,32 +23,26 @@ public class FixUpTaskSearcher {
 		final EntityManager entityManager = entityManagerFactory.createEntityManager();
 		entityManager.setFlushMode(FlushModeType.AUTO);
 
-		//		final ConsoleReader reader = new ConsoleReader();
-		//
-		//		String command;
-		//
-		//		System.out.println("Enter the FixUpTask parameter: ");
-		//		while ((command = reader.readCommand()) != null)
-		//			try {
-		//				final Query query = entityManager.createQuery("select c from FixUpTask c where c.ticker like CONCAT('%',:command,'%') or c.description like CONCAT('%',:command,'%') or c.address like CONCAT('%',:command,'%') or c.maxPrice = :command");
-		//				query.setParameter("command", command);
-		//				final List<Object> result = query.getResultList();
-		//
-		//				if (result.isEmpty())
-		//					System.out.println("0 objects found");
-		//				else
-		//					SchemaPrinter.print(result);
-		//			} catch (final Exception e) {
-		//				e.printStackTrace();
-		//				continue;
-		//			} finally {
-		//				System.out.println("Enter the FixUpTask parameter: ");
-		//			}
+		final ConsoleReader reader = new ConsoleReader();
 
-		final Query query = entityManager.createQuery("select c from Message c");
-		final List<Message> list = query.getResultList();
+		String command;
 
-		for (final Message e : list)
-			System.out.println(e);
+		System.out.println("Enter the FixUpTask parameter: ");
+		while ((command = reader.readCommand()) != null)
+			try {
+				final Query query = entityManager.createQuery("select c from FixUpTask c where c.ticker like CONCAT('%',:command,'%') or c.description like CONCAT('%',:command,'%') or c.address like CONCAT('%',:command,'%') or c.maxPrice = :command");
+				query.setParameter("command", command);
+				final List<Object> result = query.getResultList();
+
+				if (result.isEmpty())
+					System.out.println("0 objects found");
+				else
+					SchemaPrinter.print(result);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				continue;
+			} finally {
+				System.out.println("Enter the FixUpTask parameter: ");
+			}
 	}
 }
