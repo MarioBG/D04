@@ -27,13 +27,15 @@ public class CustomerService {
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private CustomerRepository	customerRepository;
+	private CustomerRepository customerRepository;
 
 	// Supporting services ----------------------------------------------------
 
 	@Autowired
-	private UserAccountService	userAccountService;
+	private UserAccountService userAccountService;
 
+	@Autowired
+	private FixUpTaskService fixUpTaskService;
 
 	// Simple CRUD methods ----------------------------------------------------
 
@@ -63,6 +65,7 @@ public class CustomerService {
 
 	public Customer save(final Customer customer) {
 		Assert.notNull(customer);
+		Assert.isTrue(customer.getId() != 0);
 
 		Customer result;
 
@@ -110,5 +113,6 @@ public class CustomerService {
 		customerRepository.delete(customer);
 	}
 	
-	
+
+
 }

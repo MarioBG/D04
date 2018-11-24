@@ -69,23 +69,24 @@ public class HandyWorkerService {
 	public HandyWorker save(HandyWorker handyWorker) {
 		Assert.notNull(handyWorker);
 
-		if (handyWorkerRepository.exists(handyWorker.getId())) {
-			HandyWorker saved = new HandyWorker();
-			saved.setAddress(handyWorker.getAddress());
-			saved.setName(handyWorker.getName());
-			saved.setSurname(handyWorker.getSurname());
-			saved.setMiddleName(handyWorker.getMiddleName());
-			saved.setEmail(handyWorker.getEmail());
-			saved.setPhoneNumber(handyWorker.getPhoneNumber());
-			saved.setPhoto(handyWorker.getPhoto());
-			saved.setMake(handyWorker.getMake());
-			saved.setBoxes(handyWorker.getBoxes());
-			saved.setSocialIdentity(handyWorker.getSocialIdentity());
-			saved.setUserAccount(handyWorker.getUserAccount());
-			saved.setCurriculum(handyWorker.getCurriculum());
-			saved.setFinder(handyWorker.getFinder());
-			return handyWorkerRepository.save(saved);
-		} else
+//		if (handyWorkerRepository.exists(handyWorker.getId())) {
+//			HandyWorker saved = new HandyWorker();
+//			saved.setAddress(handyWorker.getAddress());
+//			saved.setName(handyWorker.getName());
+//			saved.setSurname(handyWorker.getSurname());
+//			saved.setMiddleName(handyWorker.getMiddleName());
+//			saved.setEmail(handyWorker.getEmail());
+//			saved.setPhoneNumber(handyWorker.getPhoneNumber());
+//			saved.setPhoto(handyWorker.getPhoto());
+//			saved.setMake(handyWorker.getMake());
+//			saved.setBoxes(handyWorker.getBoxes());
+//			saved.setSocialIdentity(handyWorker.getSocialIdentity());
+//			saved.setUserAccount(handyWorker.getUserAccount());
+//			saved.setCurriculum(handyWorker.getCurriculum());
+//			saved.setFinder(handyWorker.getFinder());
+//			
+//			return handyWorkerRepository.save(saved);
+//		} else
 			return handyWorkerRepository.save(handyWorker);
 	}
 
@@ -119,5 +120,13 @@ public class HandyWorkerService {
 		res.setFinder(finder);
 		return res;
 	}
+
+	public void delete(HandyWorker handyWorker) {
+		Assert.notNull(handyWorker);
+		Assert.isTrue(handyWorker.getId() != 0);
+		
+		handyWorkerRepository.delete(handyWorker);
+	}
+	
 
 }

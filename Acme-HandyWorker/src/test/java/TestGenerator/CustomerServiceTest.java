@@ -29,7 +29,7 @@ public class CustomerServiceTest extends AbstractTest {
 		Customer customer, saved;
 		Collection<Customer> customers;
 		customer = customerService.findAll().iterator().next();
-		customer.setName("nameEX");
+		customer.setVersion(57);
 		saved = customerService.save(customer);
 		customers = customerService.findAll();
 		Assert.isTrue(customers.contains(saved));
