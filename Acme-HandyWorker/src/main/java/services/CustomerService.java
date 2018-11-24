@@ -103,4 +103,12 @@ public class CustomerService {
 		return res;
 
 	}
+
+	public void delete(Customer customer) {
+		Assert.notNull(customer);
+		Assert.isTrue(this.customerRepository.exists(customer.getId()));
+		customerRepository.delete(customer);
+	}
+	
+	
 }
