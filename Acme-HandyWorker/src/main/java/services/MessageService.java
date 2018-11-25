@@ -20,26 +20,26 @@ import domain.Message;
 
 @Service
 @Transactional
-public class MessageService {																		//TODO AdministratorService, comprobar funcionalidad de este año
+public class MessageService {															//TODO AdministratorService, comprobar funcionalidad de este año
 
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private MessageRepository		messageRepository;
+	private MessageRepository	messageRepository;
 
 	// Supporting services ----------------------------------------------------
 
 	@Autowired
-	private BoxService				boxService;
+	private BoxService			boxService;
+
+	//	@Autowired
+	//	private AdministratorService	adminService;
 
 	@Autowired
-	private AdministratorService	adminService;
+	private ActorService		actorService;
 
 	@Autowired
-	private ActorService			actorService;
-
-	@Autowired
-	private Validator				validator;
+	private Validator			validator;
 
 
 	// Constructors -----------------------------------------------------------
@@ -145,7 +145,7 @@ public class MessageService {																		//TODO AdministratorService, comp
 	public Message broadcast(final Message message) {
 
 		Assert.notNull(message);
-		Assert.notNull(this.adminService.findByPrincipal());
+		//		Assert.notNull(this.adminService.findByPrincipal());											//TODO Hacer el AdministratorService
 
 		Message saved = null;
 		Message copy, savedCopy;

@@ -1,23 +1,20 @@
 
 package services;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import repositories.HandyWorkerRepository;
+import security.Authority;
+import security.LoginService;
 import security.UserAccount;
-import security.UserAccountService;
-import domain.Box;
-import domain.Curriculum;
-import domain.Finder;
+import domain.Application;
 import domain.HandyWorker;
-import domain.SocialIdentity;
 
 @Service
 @Transactional
@@ -31,9 +28,6 @@ public class HandyWorkerService {
 	// Supporting services ----------------------------------------------------
 
 	@Autowired
-	private UserAccountService		userAccountService;
-
-	@Autowired
 	private FinderService			finderService;
 
 	@Autowired
@@ -45,14 +39,14 @@ public class HandyWorkerService {
 	public Collection<HandyWorker> findAll() {
 		Collection<HandyWorker> result;
 
-		result = handyWorkerRepository.findAll();
+		result = this.handyWorkerRepository.findAll();
 		Assert.notNull(result);
 
 		return result;
 	}
 
 	public boolean exists(final Integer arg0) {
-		return handyWorkerRepository.exists(arg0);
+		return this.handyWorkerRepository.exists(arg0);
 	}
 
 	public HandyWorker findOne(final int handyWorkerId) {
@@ -60,73 +54,93 @@ public class HandyWorkerService {
 
 		HandyWorker result;
 
-		result = handyWorkerRepository.findOne(handyWorkerId);
+		result = this.handyWorkerRepository.findOne(handyWorkerId);
 		Assert.notNull(result);
 
 		return result;
 	}
 
-	public HandyWorker save(HandyWorker handyWorker) {
-		Assert.notNull(handyWorker);
+	public HandyWorker save(final HandyWorker handyWorker) {
+		HandyWorker result, saved;
+		final UserAccount logedUserAccount;
+		Authority authority;
+		Md5PasswordEncoder encoder;
 
-//		if (handyWorkerRepository.exists(handyWorker.getId())) {
-//			HandyWorker saved = new HandyWorker();
-//			saved.setAddress(handyWorker.getAddress());
-//			saved.setName(handyWorker.getName());
-//			saved.setSurname(handyWorker.getSurname());
-//			saved.setMiddleName(handyWorker.getMiddleName());
-//			saved.setEmail(handyWorker.getEmail());
-//			saved.setPhoneNumber(handyWorker.getPhoneNumber());
-//			saved.setPhoto(handyWorker.getPhoto());
-//			saved.setMake(handyWorker.getMake());
-//			saved.setBoxes(handyWorker.getBoxes());
-//			saved.setSocialIdentity(handyWorker.getSocialIdentity());
-//			saved.setUserAccount(handyWorker.getUserAccount());
-//			saved.setCurriculum(handyWorker.getCurriculum());
-//			saved.setFinder(handyWorker.getFinder());
-//			
-//			return handyWorkerRepository.save(saved);
-//		} else
-			return handyWorkerRepository.save(handyWorker);
+		encoder = new Md5PasswordEncoder();
+		authority = new Authority();
+		authority.setAuthority("HANDYWORKER");
+		Assert.notNull(handyWorker, "handyWorker.not.null");
+
+		if (handyWorker.getId() != 0) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "handyWorker.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(handyWorker.getUserAccount()), "handyWorker.notEqual.userAccount");
+			saved = this.handyWorkerRepository.findOne(handyWorker.getId());
+			System.out.println(saved);
+			Assert.notNull(saved, "handyWorker.not.null");
+			Assert.isTrue(saved.getUserAccount().getUsername().equals(handyWorker.getUserAccount().getUsername()), "handyWorker.notEqual.username");
+			Assert.isTrue(handyWorker.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "handyWorker.notEqual.password");
+			Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && handyWorker.isSuspicious() == saved.isSuspicious(), "handyWorker.notEqual.accountOrSuspicious");
+
+		} else {
+			Assert.isTrue(handyWorker.isSuspicious() == false, "handyWorker.notSuspicious.false");
+			handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
+			handyWorker.getUserAccount().setEnabled(true);
+
+		}
+
+		result = this.handyWorkerRepository.save(handyWorker);
+
+		return result;
+
 	}
 
 	public HandyWorker create() {
-		HandyWorker res = new HandyWorker();
-		String name = "";
-		String middleName = "";
-		String surname = "";
-		String email = "";
-		String photo = "";
-		String phoneNumber = "";
-		String address = "";
-		String make = "";
-		List<Box> boxes = new ArrayList<>();
-		List<SocialIdentity> socialIdentities = new ArrayList<>();
-		UserAccount userAccount = userAccountService.create();
-		Curriculum curriculum = curriculumService.create();
-		Finder finder = finderService.create();
-		res.setPhoto(photo);
-		res.setPhoneNumber(phoneNumber);
-		res.setAddress(address);
-		res.setMiddleName(middleName);
-		res.setSurname(surname);
-		res.setEmail(email);
-		res.setName(name);
-		res.setMake(make);
-		res.setUserAccount(userAccount);
-		res.setBoxes(boxes);
-		res.setSocialIdentity(socialIdentities);
-		res.setCurriculum(curriculum);
-		res.setFinder(finder);
-		return res;
+		HandyWorker result;
+		UserAccount userAccount;
+		Authority authority;
+
+		result = new HandyWorker();
+		userAccount = new UserAccount();
+		authority = new Authority();
+
+		result.setSuspicious(false);
+
+		authority.setAuthority("HANDYWORKER");
+		userAccount.addAuthority(authority);
+		userAccount.setEnabled(true);
+
+		result.setUserAccount(userAccount);
+
+		return result;
 	}
 
-	public void delete(HandyWorker handyWorker) {
+	public void delete(final HandyWorker handyWorker) {
 		Assert.notNull(handyWorker);
 		Assert.isTrue(handyWorker.getId() != 0);
-		
-		handyWorkerRepository.delete(handyWorker);
+
+		this.handyWorkerRepository.delete(handyWorker);
 	}
-	
+
+	public HandyWorker findByUserAccountId(final int userAccountId) {
+		HandyWorker result;
+
+		Assert.isTrue(userAccountId != 0);
+
+		result = this.handyWorkerRepository.findByUserAccountId(userAccountId);
+
+		return result;
+	}
+
+	public HandyWorker findByApplicationId(final Application application) {
+		HandyWorker result;
+
+		Assert.notNull(application);
+		Assert.isTrue(application.getId() != 0);
+
+		result = this.handyWorkerRepository.findByApplicationId(application.getId());
+
+		return result;
+	}
 
 }

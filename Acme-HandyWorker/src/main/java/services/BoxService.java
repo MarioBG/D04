@@ -20,7 +20,7 @@ import domain.Message;
 
 @Service
 @Transactional
-public class BoxService {
+public class BoxService {																			//TODO Revisar los casos de uso de este año
 
 	// Managed repository -----------------------------------------------------
 
@@ -259,7 +259,7 @@ public class BoxService {
 	public Box findByBoxName(final int userAccountId, final String folderName) {
 
 		Box result = null;
-		result = this.boxRepository.findByFolderName(userAccountId, folderName);
+		result = this.boxRepository.findByBoxName(userAccountId, folderName);
 		return result;
 	}
 

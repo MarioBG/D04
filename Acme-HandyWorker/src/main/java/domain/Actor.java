@@ -29,6 +29,7 @@ public abstract class Actor extends DomainEntity {
 	private String	photo;
 	private String	phoneNumber;
 	private String	address;
+	public boolean	suspicious;
 
 
 	@NotBlank
@@ -91,6 +92,14 @@ public abstract class Actor extends DomainEntity {
 
 	public void setAddress(final String address) {
 		this.address = address;
+	}
+
+	public boolean isSuspicious() {
+		return this.suspicious;
+	}
+
+	public void setSuspicious(final boolean suspicious) {
+		this.suspicious = suspicious;
 	}
 
 

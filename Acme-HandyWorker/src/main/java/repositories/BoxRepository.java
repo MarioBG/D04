@@ -5,7 +5,6 @@ import java.util.Collection;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import domain.Box;
@@ -25,20 +24,14 @@ public interface BoxRepository extends JpaRepository<Box, Integer> {
 	@Query("select b from Actor a join a.boxes b where a.id = ?1 and b.name='TRASHBOX'")
 	Box getTrashBoxFolderFromActorId(int id);
 
-	@Query("select b from Actor c join c.boxes b where b.children is empty and c.id = :actorId")
-	Collection<Box> getFirstLevelFoldersFromActorId(@Param("actorId") int a);
-
 	@Query("select b from Box b join b.messages m where m.id=?1")
 	Box getFolderFromMessageId(int messageId);
-
-	@Query("select b.children from Box b where b.id = :boxId")
-	Collection<Box> getChildFolders(@Param("boxId") int a);
 
 	@Query("select b from Actor a join a.boxes b where a.userAccount.id = ?1")
 	Collection<Box> findBoxesByUserAccountId(int userAccountId);
 
 	@Query("select b from Actor a join a.boxes b where a.id = ?1 and b.name='?2'")
-	Box findByFolderName(int userAccountId, String folderName);
+	Box findByBoxName(int userAccountId, String folderName);
 
 	@Query("select p from Box p join p.children c where c.id = ?1")
 	Box findByChildId(int id);
