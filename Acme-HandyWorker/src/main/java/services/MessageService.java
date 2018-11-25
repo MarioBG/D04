@@ -20,24 +20,26 @@ import domain.Message;
 
 @Service
 @Transactional
-public class MessageService {
+public class MessageService {																		//TODO AdministratorService, comprobar funcionalidad de este año
 
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private MessageRepository	messageRepository;
+	private MessageRepository		messageRepository;
 
 	// Supporting services ----------------------------------------------------
 
 	@Autowired
-	private BoxService			folderService;
+	private BoxService				boxService;
 
 	@Autowired
-	private ActorService		actorService;
+	private AdministratorService	adminService;
 
 	@Autowired
+	private ActorService			actorService;
+
 	@Autowired
-	private Validator			validator;
+	private Validator				validator;
 
 
 	// Constructors -----------------------------------------------------------
@@ -52,7 +54,7 @@ public class MessageService {
 
 		Message message;
 		Actor actor;
-		final Folder folder;
+		final Box folder;
 
 		message = new Message();
 		message.setMoment(new Date(System.currentTimeMillis() - 1000));
@@ -60,8 +62,8 @@ public class MessageService {
 		actor = this.actorService.findByPrincipal();
 		message.setSender(actor);
 
-		box = this.folderService.findByBoxName(actor.getUserAccount().getId(), "out box");
-		message.setFolder(folder);
+		folder = this.boxService.findByBoxName(actor.getUserAccount().getId(), "OUTBOX");
+		message.setBox(folder);
 
 		return message;
 	}
@@ -72,13 +74,13 @@ public class MessageService {
 
 		Message saved;
 		final Actor actor;
-		Folder trashbox;
+		Box trashbox;
 
 		actor = this.actorService.findByPrincipal();
-		trashbox = this.folderService.findByFolderName(actor.getUserAccount().getId(), "trash box");
+		trashbox = this.boxService.findByBoxName(actor.getUserAccount().getId(), "trash box");
 
-		if (message.getFolder() != trashbox) {
-			message.setFolder(trashbox);
+		if (message.getBox() != trashbox) {
+			message.setBox(trashbox);
 			saved = this.messageRepository.save(message);
 			trashbox.getMessages().add(saved);
 		} else
@@ -111,56 +113,56 @@ public class MessageService {
 	public Message save(final Message message) {
 
 		Assert.notNull(message);
-		this.folderService.checkPrincipal(message.getFolder());
+		this.boxService.checkPrincipal(message.getBox());
 
 		Message saved, copy;
 		Message savedCopy = null;
-		Folder outboxSender, inboxRecipient;
+		Box outboxSender, inboxRecipient;
 
 		if (message.getId() == 0) {
 			Assert.isTrue(!(message.getRecipient() == null || message.getRecipient().getId() == 0), "message.error.needsRecipient");
 			final Date newMoment = new Date(System.currentTimeMillis() - 1000);
 			copy = this.copy(message);
 
-			inboxRecipient = this.folderService.findByFolderName(copy.getRecipient().getUserAccount().getId(), "in box");
-			copy.setFolder(inboxRecipient);
+			inboxRecipient = this.boxService.findByBoxName(copy.getRecipient().getUserAccount().getId(), "in box");
+			copy.setBox(inboxRecipient);
 			savedCopy = this.messageRepository.save(copy);
 			savedCopy.setMoment(newMoment);
 			inboxRecipient.getMessages().add(savedCopy);
 
-			outboxSender = message.getFolder();
+			outboxSender = message.getBox();
 			saved = this.messageRepository.save(message);
 			saved.setMoment(newMoment);
 			outboxSender.getMessages().add(saved);
 		} else
 			saved = this.messageRepository.save(message);
-		if (!saved.getFolder().getMessages().contains(saved))
-			saved.getFolder().getMessages().add(saved);
+		if (!saved.getBox().getMessages().contains(saved))
+			saved.getBox().getMessages().add(saved);
 
 		return saved;
 	}
 
-	public Message notify(final Message message) {
+	public Message broadcast(final Message message) {
 
 		Assert.notNull(message);
 		Assert.notNull(this.adminService.findByPrincipal());
 
 		Message saved = null;
 		Message copy, savedCopy;
-		Folder outboxSender = null;
-		Folder notificationboxRecipient;
+		Box outboxSender = null;
+		Box notificationboxRecipient;
 
 		message.setMoment(new Date(System.currentTimeMillis() - 1000));
-		outboxSender = this.folderService.findByFolderName(message.getSender().getUserAccount().getId(), "out box");
-		message.setFolder(outboxSender);
+		outboxSender = this.boxService.findByBoxName(message.getSender().getUserAccount().getId(), "OUTBOX");
+		message.setBox(outboxSender);
 		final Collection<Actor> recipients = this.actorService.findAll();
 		recipients.remove(this.actorService.findByPrincipal());
 		for (final Actor recipient : recipients) {
 			message.setRecipient(recipient);
 			copy = this.copy(message);
 
-			notificationboxRecipient = this.folderService.findByFolderName(recipient.getUserAccount().getId(), "notification box");
-			copy.setFolder(notificationboxRecipient);
+			notificationboxRecipient = this.boxService.findByBoxName(recipient.getUserAccount().getId(), "INBOX");
+			copy.setBox(notificationboxRecipient);
 			saved = this.messageRepository.save(message);
 			outboxSender.getMessages().add(saved);
 			savedCopy = this.messageRepository.save(copy);
@@ -180,15 +182,15 @@ public class MessageService {
 		Message message;
 
 		if (messagePruned.getId() != 0) {
-			final Folder destinationFolder = messagePruned.getFolder();
+			final Box destinationFolder = messagePruned.getBox();
 			message = this.findOne(messagePruned.getId());
-			this.folderService.checkPrincipal(destinationFolder);
-			message.setFolder(destinationFolder);
+			this.boxService.checkPrincipal(destinationFolder);
+			message.setBox(destinationFolder);
 		} else {
 			message = this.create();
 			message.setMoment(new Date(System.currentTimeMillis() - 1000));
 			message.setSender(principal);
-			message.setFolder(this.folderService.findByFolderName(principal.getUserAccount().getId(), "out box"));
+			message.setBox(this.boxService.findByBoxName(principal.getUserAccount().getId(), "OUTBOX"));
 			message.setSubject(messagePruned.getSubject());
 			message.setBody(messagePruned.getBody());
 			message.setPriority(messagePruned.getPriority());
@@ -221,8 +223,8 @@ public class MessageService {
 
 		Collection<Message> result;
 
-		final Folder folder = this.folderService.findOne(folderId);
-		this.folderService.checkPrincipal(folder);
+		final Box folder = this.boxService.findOne(folderId);
+		this.boxService.checkPrincipal(folder);
 		result = folder.getMessages();
 
 		return result;
@@ -234,18 +236,18 @@ public class MessageService {
 		this.messageRepository.delete(messages);
 	}
 
-	public void moveMessageToFolder(final Message message, final Folder folder) {
+	public void moveMessageToFolder(final Message message, final Box folder) {
 		Assert.notNull(folder);
 		Assert.notNull(message);
-		this.folderService.checkPrincipal(folder);
+		this.boxService.checkPrincipal(folder);
 		Assert.isTrue(!folder.getMessages().contains(message));
 
 		final Actor actor = this.actorService.findByPrincipal();
 
-		Assert.isTrue(actor.getFolders().contains(message.getFolder()));
+		Assert.isTrue(actor.getBoxes().contains(message.getBox()));
 
 		final List<Message> messages = new ArrayList<Message>(folder.getMessages());
-		final Folder folderSource = message.getFolder();
+		final Box folderSource = message.getBox();
 		final List<Message> messages2 = new ArrayList<Message>(folderSource.getMessages());
 
 		messages.add(message);
@@ -253,8 +255,8 @@ public class MessageService {
 		messages2.remove(message);
 		folderSource.setMessages(messages2);
 
-		this.folderService.save(folder);
-		message.setFolder(folder);
+		this.boxService.save(null, folder);
+		message.setBox(folder);
 		this.save(message);
 	}
 

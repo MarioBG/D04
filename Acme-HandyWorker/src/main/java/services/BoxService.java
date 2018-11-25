@@ -25,7 +25,7 @@ public class BoxService {
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private BoxRepository	folderRepository;
+	private BoxRepository	boxRepository;
 
 	// Supporting services ----------------------------------------------------
 
@@ -63,14 +63,14 @@ public class BoxService {
 	public Box findOne(final int folderId) {
 
 		Box result = null;
-		result = this.folderRepository.findOne(folderId);
+		result = this.boxRepository.findOne(folderId);
 		return result;
 	}
 
 	public Box findOneToEdit(final int folderId) {
 
 		Box result = null;
-		result = this.folderRepository.findOne(folderId);
+		result = this.boxRepository.findOne(folderId);
 		this.checkPrincipal(result);
 		Assert.isTrue(!result.getPredefined(), "box.error.isPredefined");
 		return result;
@@ -79,11 +79,11 @@ public class BoxService {
 	public Collection<Box> findAll() {
 
 		Collection<Box> result = null;
-		result = this.folderRepository.findAll();
+		result = this.boxRepository.findAll();
 		return result;
 	}
 
-	public Box save(final Box folder, final Box parent) {
+	public Box save(final Box parent, final Box folder) {
 
 		Assert.notNull(folder);
 		Assert.isTrue(!folder.getPredefined(), "box.error.isPredefined");
@@ -94,13 +94,13 @@ public class BoxService {
 		Box saved;
 
 		if (folder.getId() == 0) {
-			saved = this.folderRepository.save(folder);
+			saved = this.boxRepository.save(folder);
 			actor = this.actorService.findByPrincipal();
 			actor.getBoxes().add(saved);
 			if (parent != null)
 				parent.getChildren().add(saved);
 		} else {
-			saved = this.folderRepository.save(folder);
+			saved = this.boxRepository.save(folder);
 			if (parent != null)
 				if (!parent.getChildren().contains(saved))
 					parent.getChildren().add(saved);
@@ -118,12 +118,12 @@ public class BoxService {
 		Box parent;
 
 		actor = this.actorService.findByPrincipal();
-		parent = this.folderRepository.findByChildId(box.getId());
+		parent = this.boxRepository.findByChildId(box.getId());
 
 		this.messageService.deleteByFolder(box);
 		if (parent != null)
 			parent.getChildren().remove(box);
-		this.folderRepository.delete(box);
+		this.boxRepository.delete(box);
 	}
 
 	// Other business methods -------------------------------------------------
@@ -203,7 +203,7 @@ public class BoxService {
 
 		Box result = null;
 
-		result = this.folderRepository.save(folder);
+		result = this.boxRepository.save(folder);
 		actor.getBoxes().add(result);
 		this.actorService.save(actor);
 
@@ -218,7 +218,7 @@ public class BoxService {
 		return result;
 	}
 
-	public Collection<Box> findByFolderId(final Integer folderId) {
+	public Collection<Box> findByBoxId(final Integer folderId) {
 
 		Collection<Box> result;
 		Box folder;
@@ -239,7 +239,7 @@ public class BoxService {
 
 	public Collection<Box> findBoxesWithoutParent(final int userAccountId) {
 
-		final Collection<Box> boxes = this.folderRepository.findBoxesByUserAccountId(userAccountId);
+		final Collection<Box> boxes = this.boxRepository.findBoxesByUserAccountId(userAccountId);
 		for (final Box b : boxes)
 			for (final Box c : boxes)
 				if (b.getChildren().contains(c)) {
@@ -252,14 +252,14 @@ public class BoxService {
 	public Collection<Box> findByUserAccountId(final int userAccountId) {
 
 		Collection<Box> result = null;
-		result = this.folderRepository.findBoxesByUserAccountId(userAccountId);
+		result = this.boxRepository.findBoxesByUserAccountId(userAccountId);
 		return result;
 	}
 
-	public Box findByFolderName(final int userAccountId, final String folderName) {
+	public Box findByBoxName(final int userAccountId, final String folderName) {
 
 		Box result = null;
-		result = this.folderRepository.findByFolderName(userAccountId, folderName);
+		result = this.boxRepository.findByFolderName(userAccountId, folderName);
 		return result;
 	}
 
@@ -268,7 +268,7 @@ public class BoxService {
 		Assert.notNull(folder);
 
 		final Actor actor = this.actorService.findByPrincipal();
-		final Box folderActor = this.findByFolderName(actor.getUserAccount().getId(), folder.getName());
+		final Box folderActor = this.findByBoxName(actor.getUserAccount().getId(), folder.getName());
 		Assert.isNull(folderActor);
 	}
 
@@ -277,16 +277,16 @@ public class BoxService {
 		Assert.notNull(folder);
 
 		final Actor actor = this.actorService.findByPrincipal();
-		final Collection<Box> foldersActor = this.folderRepository.findBoxesByUserAccountId(actor.getUserAccount().getId());
+		final Collection<Box> foldersActor = this.boxRepository.findBoxesByUserAccountId(actor.getUserAccount().getId());
 		Assert.isTrue(foldersActor.contains(folder));
 	}
 
 	public Collection<Box> save(final Collection<Box> folders) {
-		return this.folderRepository.save(folders);
+		return this.boxRepository.save(folders);
 	}
 
 	public void delete(final Collection<Box> folders) {
-		this.folderRepository.delete(folders);
+		this.boxRepository.delete(folders);
 	}
 
 }
