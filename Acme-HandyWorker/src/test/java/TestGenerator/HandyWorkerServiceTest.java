@@ -69,6 +69,21 @@ public class HandyWorkerServiceTest extends AbstractTest {
 		this.handyworkerService.delete(handyworker);
 	}
 
+	@Test
+	public void testCreate() {
+		HandyWorker handyWorker;
+
+		handyWorker = this.handyworkerService.create();
+		Assert.isNull(handyWorker.getAddress());
+		Assert.isNull(handyWorker.getEmail());
+		Assert.isNull(handyWorker.getName());
+		Assert.isNull(handyWorker.getSurname());
+		Assert.isNull(handyWorker.getPhoneNumber());
+		Assert.isNull(handyWorker.getPhoto());
+		Assert.isNull(handyWorker.getMake());
+		Assert.isNull(handyWorker.getMiddleName());
+	}
+
 	private HandyWorker copyHandyWorker(final HandyWorker handyWorker) {
 		HandyWorker result;
 

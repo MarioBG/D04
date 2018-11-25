@@ -1,9 +1,7 @@
 
 package services;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -14,13 +12,7 @@ import org.springframework.util.Assert;
 import repositories.CustomerRepository;
 import security.Authority;
 import security.UserAccount;
-import security.UserAccountService;
-import domain.Box;
-import domain.Complaint;
 import domain.Customer;
-import domain.Endorsement;
-import domain.FixUpTask;
-import domain.SocialIdentity;
 
 @Service
 @Transactional
@@ -32,9 +24,6 @@ public class CustomerService {
 	private CustomerRepository	customerRepository;
 
 	// Supporting services ----------------------------------------------------
-
-	@Autowired
-	private UserAccountService	userAccountService;
 
 	@Autowired
 	private FixUpTaskService	fixUpTaskService;
@@ -97,34 +86,23 @@ public class CustomerService {
 
 	public Customer create() {
 
-		final Customer res = new Customer();
-		final String name = "";
-		final String middleName = "";
-		final String surname = "";
-		final String email = "";
-		final String photo = "";
-		final String phoneNumber = "";
-		final String address = "";
-		final UserAccount userAccount = this.userAccountService.create();
-		final List<Box> boxes = new ArrayList<>();
-		final List<Endorsement> endorsements = new ArrayList<>();
-		final List<Complaint> complaints = new ArrayList<>();
-		final List<FixUpTask> fixUpTasks = new ArrayList<>();
-		final List<SocialIdentity> socialIdentities = new ArrayList<>();
-		res.setPhoto(photo);
-		res.setPhoneNumber(phoneNumber);
-		res.setAddress(address);
-		res.setMiddleName(middleName);
-		res.setSurname(surname);
-		res.setEmail(email);
-		res.setName(name);
-		res.setUserAccount(userAccount);
-		res.setBoxes(boxes);
-		res.setComplaints(complaints);
-		res.setEndorsements(endorsements);
-		res.setFixUpTasks(fixUpTasks);
-		res.setSocialIdentity(socialIdentities);
-		return res;
+		Customer result;
+		UserAccount userAccount;
+		Authority authority;
+
+		result = new Customer();
+		userAccount = new UserAccount();
+		authority = new Authority();
+
+		result.setSuspicious(false);
+
+		authority.setAuthority("CUSTOMER");
+		userAccount.addAuthority(authority);
+		userAccount.setEnabled(true);
+
+		result.setUserAccount(userAccount);
+
+		return result;
 
 	}
 

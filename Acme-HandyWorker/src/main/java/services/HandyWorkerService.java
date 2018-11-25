@@ -1,9 +1,7 @@
 
 package services;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -14,12 +12,8 @@ import org.springframework.util.Assert;
 import repositories.HandyWorkerRepository;
 import security.Authority;
 import security.UserAccount;
-import security.UserAccountService;
-import domain.Box;
-import domain.Curriculum;
-import domain.Finder;
+import domain.Application;
 import domain.HandyWorker;
-import domain.SocialIdentity;
 
 @Service
 @Transactional
@@ -31,9 +25,6 @@ public class HandyWorkerService {
 	private HandyWorkerRepository	handyWorkerRepository;
 
 	// Supporting services ----------------------------------------------------
-
-	@Autowired
-	private UserAccountService		userAccountService;
 
 	@Autowired
 	private FinderService			finderService;
@@ -70,7 +61,7 @@ public class HandyWorkerService {
 
 	public HandyWorker save(final HandyWorker handyWorker) {
 		HandyWorker result, saved;
-		//UserAccount userAccount;
+		//final UserAccount userAccount;
 		Authority authority;
 		Md5PasswordEncoder encoder;
 
@@ -78,7 +69,7 @@ public class HandyWorkerService {
 		authority = new Authority();
 		authority.setAuthority("HANDYWORKER");
 		Assert.notNull(handyWorker, "handyWorker.not.null");
-		//	userAccount = LoginService.getPrincipal();
+		//userAccount = LoginService.getPrincipal();
 
 		//Si el handyworker ya persiste vemos que el actor logeado sea el propio handyworker que se quiere modificar
 		if (handyWorker.getId() != 0) {
@@ -87,45 +78,34 @@ public class HandyWorkerService {
 			Assert.notNull(saved, "handyWorker.not.null");
 			Assert.isTrue(saved.getUserAccount().getUsername().equals(handyWorker.getUserAccount().getUsername()), "handyWorker.notEqual.username");
 			Assert.isTrue(handyWorker.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "handyWorker.notEqual.password");
-			//Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && handyWorker.getSuspicious() == saved.getSuspicious(), "handyWorker.notEqual.accountOrSuspicious");
+			Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && handyWorker.isSuspicious() == saved.isSuspicious(), "handyWorker.notEqual.accountOrSuspicious");
 		} else
 			//	Assert.isTrue(userAccount.getAuthorities().contains(authority), "handyWorker.authority.handyWorker"); //Si no vemos que un administrador va a guardar a otro
-			//	Assert.isTrue(handyWorker.getSuspicious() == false, "handyWorker.notSuspicious.false");
-			handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
+			Assert.isTrue(handyWorker.isSuspicious() == false, "handyWorker.notSuspicious.false");
+		handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
 
 		result = this.handyWorkerRepository.save(handyWorker);
 		return result;
 	}
 
 	public HandyWorker create() {
-		final HandyWorker res = new HandyWorker();
-		final String name = "";
-		final String middleName = "";
-		final String surname = "";
-		final String email = "";
-		final String photo = "";
-		final String phoneNumber = "";
-		final String address = "";
-		final String make = "";
-		final List<Box> boxes = new ArrayList<>();
-		final List<SocialIdentity> socialIdentities = new ArrayList<>();
-		final UserAccount userAccount = this.userAccountService.create();
-		final Curriculum curriculum = this.curriculumService.create();
-		final Finder finder = this.finderService.create();
-		res.setPhoto(photo);
-		res.setPhoneNumber(phoneNumber);
-		res.setAddress(address);
-		res.setMiddleName(middleName);
-		res.setSurname(surname);
-		res.setEmail(email);
-		res.setName(name);
-		res.setMake(make);
-		res.setUserAccount(userAccount);
-		res.setBoxes(boxes);
-		res.setSocialIdentity(socialIdentities);
-		res.setCurriculum(curriculum);
-		res.setFinder(finder);
-		return res;
+		HandyWorker result;
+		UserAccount userAccount;
+		Authority authority;
+
+		result = new HandyWorker();
+		userAccount = new UserAccount();
+		authority = new Authority();
+
+		result.setSuspicious(false);
+
+		authority.setAuthority("HANDYWORKER");
+		userAccount.addAuthority(authority);
+		userAccount.setEnabled(true);
+
+		result.setUserAccount(userAccount);
+
+		return result;
 	}
 
 	public void delete(final HandyWorker handyWorker) {
@@ -141,6 +121,17 @@ public class HandyWorkerService {
 		Assert.isTrue(userAccountId != 0);
 
 		result = this.handyWorkerRepository.findByUserAccountId(userAccountId);
+
+		return result;
+	}
+
+	public HandyWorker findByApplicationId(final Application application) {
+		HandyWorker result;
+
+		Assert.notNull(application);
+		Assert.isTrue(application.getId() != 0);
+
+		result = this.handyWorkerRepository.findByApplicationId(application.getId());
 
 		return result;
 	}

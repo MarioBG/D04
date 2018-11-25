@@ -69,6 +69,27 @@ public class CustomerServiceTest extends AbstractTest {
 		this.customerService.delete(customer);
 	}
 
+	@Test
+	public void testCreate() {
+		Customer customer;
+
+		customer = this.customerService.create();
+		Assert.isNull(customer.getAddress());
+		Assert.isNull(customer.getEmail());
+		Assert.isNull(customer.getName());
+		Assert.isNull(customer.getSurname());
+		Assert.isNull(customer.getPhoneNumber());
+		Assert.isNull(customer.getPhoto());
+		Assert.isNull(customer.getBoxes());
+		Assert.isNull(customer.getComplaints());
+		Assert.isNull(customer.getEndorsements());
+		Assert.isNull(customer.getMiddleName());
+		Assert.isNull(customer.getSurname());
+		Assert.isNull(customer.getSocialIdentity());
+		Assert.isNull(customer.getFixUpTasks());
+		Assert.isNull(customer.getUserAccount());
+	}
+
 	private Customer copyCustomer(final Customer customer) {
 		Customer result;
 

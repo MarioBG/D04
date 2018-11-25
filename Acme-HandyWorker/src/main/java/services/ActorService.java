@@ -11,7 +11,6 @@ import org.springframework.util.Assert;
 import repositories.ActorRepository;
 import security.LoginService;
 import security.UserAccount;
-import security.UserAccountService;
 import domain.Actor;
 
 @Service
@@ -21,13 +20,10 @@ public class ActorService {
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private ActorRepository		actorRepository;
+	private ActorRepository	actorRepository;
+
 
 	// Supporting services ----------------------------------------------------
-
-	@Autowired
-	private UserAccountService	userAccountService;
-
 
 	// Simple CRUD methods ----------------------------------------------------
 
@@ -74,16 +70,6 @@ public class ActorService {
 	}
 
 	// Other business methods -------------------------------------------------
-
-	public UserAccount findUserAccount(final Actor actor) {
-		Assert.notNull(actor);
-
-		UserAccount result;
-
-		result = this.userAccountService.findByActor(actor);
-
-		return result;
-	}
 
 	public Actor findByPrincipal() {
 		Actor actor;
