@@ -40,7 +40,7 @@ public class HandyWorker extends Actor {
 		return this.applications;
 	}
 
-	public void setApplication(final Collection<Application> applications) {
+	public void setApplications(final Collection<Application> applications) {
 		this.applications = applications;
 	}
 
@@ -60,10 +60,6 @@ public class HandyWorker extends Actor {
 
 	public void setEndorsements(final Collection<Endorsement> endorsements) {
 		this.endorsements = endorsements;
-	}
-
-	public void setApplications(final Collection<Application> applications) {
-		this.applications = applications;
 	}
 
 	@Valid

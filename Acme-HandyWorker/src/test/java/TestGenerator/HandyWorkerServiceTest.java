@@ -1,3 +1,4 @@
+
 package TestGenerator;
 
 import java.util.Collection;
@@ -11,54 +12,86 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Assert;
 
-import domain.HandyWorker;
 import services.HandyWorkerService;
 import utilities.AbstractTest;
+import domain.HandyWorker;
 
-@ContextConfiguration(locations = { "classpath:spring/junit.xml", "classpath:spring/datasource.xml",
-		"classpath:spring/config/packages.xml" })
+@ContextConfiguration(locations = {
+	"classpath:spring/junit.xml", "classpath:spring/datasource.xml", "classpath:spring/config/packages.xml"
+})
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 public class HandyWorkerServiceTest extends AbstractTest {
 
 	@Autowired
-	private HandyWorkerService handyworkerService;
+	private HandyWorkerService	handyworkerService;
+
 
 	@Test
 	public void saveHandyWorkerTest() {
-		HandyWorker handyworker, saved;
-		Collection<HandyWorker> handyworkers;
-		handyworker = handyworkerService.findAll().iterator().next();
-		handyworker.setName("Sample");
-		saved = handyworkerService.save(handyworker);
-		handyworkers = handyworkerService.findAll();
-		Assert.isTrue(handyworkers.contains(saved));
+		HandyWorker created;
+		HandyWorker saved;
+		HandyWorker copyCreated;
+
+		created = this.handyworkerService.findAll().iterator().next();
+		System.out.println(created);
+		copyCreated = this.copyHandyWorker(created);
+		copyCreated.setName("TestHandyWorker");
+		saved = this.handyworkerService.save(copyCreated);
+		Assert.isTrue(this.handyworkerService.findAll().contains(saved));
+		Assert.isTrue(saved.getName().equals("TestHandyWorker"));
+
 	}
 
 	@Test
 	public void findAllHandyWorkerTest() {
 		Collection<HandyWorker> result;
-		result = handyworkerService.findAll();
+		result = this.handyworkerService.findAll();
 		Assert.notNull(result);
 	}
 
 	@Test
 	public void findOneHandyWorkerTest() {
-		HandyWorker handyworker = handyworkerService.findAll().iterator().next();
-		int handyworkerId = handyworker.getId();
+		final HandyWorker handyworker = this.handyworkerService.findAll().iterator().next();
+		final int handyworkerId = handyworker.getId();
 		Assert.isTrue(handyworkerId != 0);
 		HandyWorker result;
-		result = handyworkerService.findOne(handyworkerId);
+		result = this.handyworkerService.findOne(handyworkerId);
 		Assert.notNull(result);
 	}
 
 	@Test
 	public void deleteHandyWorkerTest() {
-		HandyWorker handyworker = handyworkerService.findAll().iterator().next();
+		final HandyWorker handyworker = this.handyworkerService.findAll().iterator().next();
 		Assert.notNull(handyworker);
 		Assert.isTrue(handyworker.getId() != 0);
 		Assert.isTrue(this.handyworkerService.exists(handyworker.getId()));
 		this.handyworkerService.delete(handyworker);
 	}
 
+	private HandyWorker copyHandyWorker(final HandyWorker handyWorker) {
+		HandyWorker result;
+
+		result = new HandyWorker();
+		result.setAddress(handyWorker.getAddress());
+		result.setEmail(handyWorker.getEmail());
+		result.setId(handyWorker.getId());
+		result.setName(handyWorker.getName());
+		result.setMiddleName(handyWorker.getMiddleName());
+		result.setPhoneNumber(handyWorker.getPhoneNumber());
+		result.setSurname(handyWorker.getSurname());
+		result.setMake(handyWorker.getMake());
+		result.setFinder(handyWorker.getFinder());
+		result.setApplications(handyWorker.getApplications());
+		result.setBoxes(handyWorker.getBoxes());
+		result.setCurriculum(handyWorker.getCurriculum());
+		result.setPhoto(handyWorker.getPhoto());
+		result.setSocialIdentity(handyWorker.getSocialIdentity());
+		result.setTutorials(handyWorker.getTutorials());
+		result.setEndorsements(handyWorker.getEndorsements());
+		result.setUserAccount(handyWorker.getUserAccount());
+		result.setVersion(handyWorker.getVersion());
+
+		return result;
+	}
 }
