@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import repositories.ActorRepository;
+import security.LoginService;
 import security.UserAccount;
 import security.UserAccountService;
 import domain.Actor;
@@ -39,8 +40,8 @@ public class ActorService {
 		return result;
 	}
 
-	public boolean exists(Integer id) {
-		return actorRepository.exists(id);
+	public boolean exists(final Integer id) {
+		return this.actorRepository.exists(id);
 	}
 
 	public Actor findOne(final int actorId) {
@@ -82,5 +83,17 @@ public class ActorService {
 		result = this.userAccountService.findByActor(actor);
 
 		return result;
+	}
+
+	public Actor findByPrincipal() {
+		Actor actor;
+
+		final UserAccount principalUserAccount = LoginService.getPrincipal();
+		if (principalUserAccount == null)
+			actor = null;
+		else
+			actor = this.actorRepository.findByUserAccountId(principalUserAccount.getId());
+
+		return actor;
 	}
 }
