@@ -11,6 +11,7 @@ import org.springframework.util.Assert;
 
 import repositories.HandyWorkerRepository;
 import security.Authority;
+import security.LoginService;
 import security.UserAccount;
 import domain.Application;
 import domain.HandyWorker;
@@ -61,7 +62,7 @@ public class HandyWorkerService {
 
 	public HandyWorker save(final HandyWorker handyWorker) {
 		HandyWorker result, saved;
-		//final UserAccount userAccount;
+		final UserAccount logedUserAccount;
 		Authority authority;
 		Md5PasswordEncoder encoder;
 
@@ -69,23 +70,29 @@ public class HandyWorkerService {
 		authority = new Authority();
 		authority.setAuthority("HANDYWORKER");
 		Assert.notNull(handyWorker, "handyWorker.not.null");
-		//userAccount = LoginService.getPrincipal();
 
-		//Si el handyworker ya persiste vemos que el actor logeado sea el propio handyworker que se quiere modificar
 		if (handyWorker.getId() != 0) {
-			//	Assert.isTrue(userAccount.equals(handyWorker.getUserAccount()), "handyWorker.notEqual.userAccount");
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "handyWorker.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(handyWorker.getUserAccount()), "handyWorker.notEqual.userAccount");
 			saved = this.handyWorkerRepository.findOne(handyWorker.getId());
+			System.out.println(saved);
 			Assert.notNull(saved, "handyWorker.not.null");
 			Assert.isTrue(saved.getUserAccount().getUsername().equals(handyWorker.getUserAccount().getUsername()), "handyWorker.notEqual.username");
 			Assert.isTrue(handyWorker.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "handyWorker.notEqual.password");
 			Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && handyWorker.isSuspicious() == saved.isSuspicious(), "handyWorker.notEqual.accountOrSuspicious");
-		} else
-			//	Assert.isTrue(userAccount.getAuthorities().contains(authority), "handyWorker.authority.handyWorker"); //Si no vemos que un administrador va a guardar a otro
+
+		} else {
 			Assert.isTrue(handyWorker.isSuspicious() == false, "handyWorker.notSuspicious.false");
-		handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
+			handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
+			handyWorker.getUserAccount().setEnabled(true);
+
+		}
 
 		result = this.handyWorkerRepository.save(handyWorker);
+
 		return result;
+
 	}
 
 	public HandyWorker create() {
