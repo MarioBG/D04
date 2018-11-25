@@ -85,6 +85,7 @@ public class CustomerServiceTest extends AbstractTest {
 		result.setPhoto(customer.getPhoto());
 		result.setSocialIdentity(customer.getSocialIdentity());
 		result.setEndorsements(customer.getEndorsements());
+		result.setSuspicious(customer.isSuspicious());
 		result.setUserAccount(customer.getUserAccount());
 		result.setVersion(customer.getVersion());
 

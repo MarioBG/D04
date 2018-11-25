@@ -36,7 +36,6 @@ public class MessageService {
 	private ActorService		actorService;
 
 	@Autowired
-	@Autowired
 	private Validator			validator;
 
 

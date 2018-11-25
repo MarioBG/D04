@@ -89,6 +89,7 @@ public class HandyWorkerServiceTest extends AbstractTest {
 		result.setSocialIdentity(handyWorker.getSocialIdentity());
 		result.setTutorials(handyWorker.getTutorials());
 		result.setEndorsements(handyWorker.getEndorsements());
+		result.setSuspicious(handyWorker.isSuspicious());
 		result.setUserAccount(handyWorker.getUserAccount());
 		result.setVersion(handyWorker.getVersion());
 
