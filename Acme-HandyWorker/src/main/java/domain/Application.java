@@ -11,7 +11,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.Valid;
 import javax.validation.constraints.Digits;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 
@@ -65,7 +64,7 @@ public class Application extends DomainEntity {
 		this.comments = comments;
 	}
 
-	@NotNull
+	
 	public CreditCard getCreditCard() {
 		return this.creditCard;
 	}

@@ -64,6 +64,4 @@ public class Complaint extends DomainEntity {
 		this.attachments = attachments;
 	}
 
-	// Relationships ----------------------------------------------------------
-
 }
