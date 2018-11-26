@@ -39,7 +39,7 @@ public class Box extends DomainEntity {
 	private Collection<Box>		children;
 
 
-	@OneToMany
+	@OneToMany(mappedBy = "box")
 	public Collection<Message> getMessages() {
 		return this.messages;
 	}
