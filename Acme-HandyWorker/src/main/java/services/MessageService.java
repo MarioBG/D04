@@ -255,7 +255,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 		messages2.remove(message);
 		folderSource.setMessages(messages2);
 
-		this.boxService.save(null, folder);
+		this.boxService.save(folder);
 		message.setBox(folder);
 		this.save(message);
 	}

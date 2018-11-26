@@ -54,7 +54,6 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		result = new Box();
 
 		result.setPredefined(predefined);
-		result.setChildren(new ArrayList<Box>());
 		result.setMessages(new ArrayList<Message>());
 
 		return result;
@@ -83,12 +82,10 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		return result;
 	}
 
-	public Box save(final Box parent, final Box folder) {
+	public Box save(final Box folder) {
 
 		Assert.notNull(folder);
 		Assert.isTrue(!folder.getPredefined(), "box.error.isPredefined");
-		if (parent != null)
-			this.checkPrincipal(parent);
 
 		Actor actor;
 		Box saved;
@@ -97,14 +94,8 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 			saved = this.boxRepository.save(folder);
 			actor = this.actorService.findByPrincipal();
 			actor.getBoxes().add(saved);
-			if (parent != null)
-				parent.getChildren().add(saved);
-		} else {
+		} else
 			saved = this.boxRepository.save(folder);
-			if (parent != null)
-				if (!parent.getChildren().contains(saved))
-					parent.getChildren().add(saved);
-		}
 		return saved;
 	}
 
@@ -115,56 +106,12 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		this.checkPrincipal(box);
 
 		Actor actor;
-		Box parent;
 
 		actor = this.actorService.findByPrincipal();
-		parent = this.boxRepository.findByChildId(box.getId());
 
 		this.messageService.deleteByFolder(box);
-		if (parent != null)
-			parent.getChildren().remove(box);
 		this.boxRepository.delete(box);
 	}
-
-	// Other business methods -------------------------------------------------
-
-	//	public FolderForm construct(final Folder folder) {
-	//
-	//		Assert.notNull(folder);
-	//
-	//		FolderForm folderForm;
-	//
-	//		folderForm = new FolderForm();
-	//
-	//		folderForm.setId(folder.getId());
-	//		if (folder.getParent() == null)
-	//			folderForm.setParentId(null);
-	//		else
-	//			folderForm.setParentId(folder.getParent().getId());
-	//		folderForm.setName(folder.getName());
-	//
-	//		return folderForm;
-	//	}
-
-	//	public Folder reconstruct(final FolderForm folderForm, final BindingResult binding) {
-	//
-	//		Assert.notNull(folderForm);
-	//
-	//		Folder folder;
-	//
-	//		if (folderForm.getId() != 0)
-	//			folder = this.findOne(folderForm.getId());
-	//		else
-	//			folder = this.create(false, null);
-	//
-	//		folder.setParent(this.findOne(folderForm.getParentId()));
-	//		folder.setName(folderForm.getName());
-	//
-	//		if (binding != null)
-	//			this.validator.validate(folder, binding);
-	//
-	//		return folder;
-	//	}
 
 	public Collection<Box> defaultFolders() {
 
@@ -178,16 +125,12 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 
 		inbox.setName("in box");
 		inbox.setMessages(new ArrayList<Message>());
-		inbox.setChildren(new ArrayList<Box>());
 		outbox.setName("out box");
 		outbox.setMessages(new ArrayList<Message>());
-		outbox.setChildren(new ArrayList<Box>());
 		trashbox.setName("trash box");
 		trashbox.setMessages(new ArrayList<Message>());
-		trashbox.setChildren(new ArrayList<Box>());
 		notificationbox.setName("notification box");
 		notificationbox.setMessages(new ArrayList<Message>());
-		notificationbox.setChildren(new ArrayList<Box>());
 
 		result.add(inbox);
 		result.add(outbox);
@@ -216,37 +159,6 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		final UserAccount userAccount = LoginService.getPrincipal();
 		result = this.findByUserAccountId(userAccount.getId());
 		return result;
-	}
-
-	public Collection<Box> findByBoxId(final Integer folderId) {
-
-		Collection<Box> result;
-		Box folder;
-		Actor actor;
-
-		actor = this.actorService.findByPrincipal();
-
-		if (folderId == null)
-			result = this.findBoxesWithoutParent(actor.getUserAccount().getId());
-		else {
-			folder = this.findOne(folderId);
-			this.checkPrincipal(folder);
-			result = folder.getChildren();
-		}
-
-		return result;
-	}
-
-	public Collection<Box> findBoxesWithoutParent(final int userAccountId) {
-
-		final Collection<Box> boxes = this.boxRepository.findBoxesByUserAccountId(userAccountId);
-		for (final Box b : boxes)
-			for (final Box c : boxes)
-				if (b.getChildren().contains(c)) {
-					boxes.remove(b);
-					break;
-				}
-		return boxes;
 	}
 
 	public Collection<Box> findByUserAccountId(final int userAccountId) {

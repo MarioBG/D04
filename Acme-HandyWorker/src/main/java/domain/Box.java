@@ -36,7 +36,6 @@ public class Box extends DomainEntity {
 	// Relationships ----------------------------------------------------------
 
 	private Collection<Message>	messages;
-	private Collection<Box>		children;
 
 
 	@OneToMany(mappedBy = "box")
@@ -46,15 +45,6 @@ public class Box extends DomainEntity {
 
 	public void setMessages(final Collection<Message> messages) {
 		this.messages = messages;
-	}
-
-	@OneToMany
-	public Collection<Box> getChildren() {
-		return this.children;
-	}
-
-	public void setChildren(final Collection<Box> children) {
-		this.children = children;
 	}
 
 }
