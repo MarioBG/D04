@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.Validator;
 
 import repositories.MessageRepository;
 import domain.Actor;
@@ -38,9 +37,9 @@ public class MessageService {															//TODO AdministratorService, comprob
 	@Autowired
 	private ActorService		actorService;
 
-	@Autowired
-	private Validator			validator;
 
+	//	@Autowired
+	//	private Validator			validator;
 
 	// Constructors -----------------------------------------------------------
 
@@ -77,7 +76,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 		Box trashbox;
 
 		actor = this.actorService.findByPrincipal();
-		trashbox = this.boxService.findByBoxName(actor.getUserAccount().getId(), "trash box");
+		trashbox = this.boxService.findByBoxName(actor.getUserAccount().getId(), "TRASHBOX");
 
 		if (message.getBox() != trashbox) {
 			message.setBox(trashbox);
@@ -197,8 +196,8 @@ public class MessageService {															//TODO AdministratorService, comprob
 			message.setRecipient(messagePruned.getRecipient());
 		}
 
-		if (binding != null)
-			this.validator.validate(message, binding);
+		//		if (binding != null)
+		//			this.validator.validate(message, binding);
 
 		return message;
 	}
@@ -270,6 +269,10 @@ public class MessageService {															//TODO AdministratorService, comprob
 
 	public void flush() {
 		this.messageRepository.flush();
+	}
+
+	public boolean exists(final int id) {
+		return this.messageRepository.findOne(id) != null;
 	}
 
 }

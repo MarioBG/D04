@@ -9,7 +9,6 @@ import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.validation.Validator;
 
 import repositories.BoxRepository;
 import security.LoginService;
@@ -35,9 +34,9 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 	@Autowired
 	private MessageService	messageService;
 
-	@Autowired
-	private Validator		validator;
 
+	//	@Autowired
+	//	private Validator		validator;
 
 	// Constructors -----------------------------------------------------------
 
@@ -59,17 +58,17 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		return result;
 	}
 
-	public Box findOne(final int folderId) {
+	public Box findOne(final int boxId) {
 
 		Box result = null;
-		result = this.boxRepository.findOne(folderId);
+		result = this.boxRepository.findOne(boxId);
 		return result;
 	}
 
-	public Box findOneToEdit(final int folderId) {
+	public Box findOneToEdit(final int boxId) {
 
 		Box result = null;
-		result = this.boxRepository.findOne(folderId);
+		result = this.boxRepository.findOne(boxId);
 		this.checkPrincipal(result);
 		Assert.isTrue(!result.getPredefined(), "box.error.isPredefined");
 		return result;
@@ -82,20 +81,20 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		return result;
 	}
 
-	public Box save(final Box folder) {
+	public Box save(final Box box) {
 
-		Assert.notNull(folder);
-		Assert.isTrue(!folder.getPredefined(), "box.error.isPredefined");
+		Assert.notNull(box);
+		Assert.isTrue(!box.getPredefined(), "box.error.isPredefined");
 
 		Actor actor;
 		Box saved;
 
-		if (folder.getId() == 0) {
-			saved = this.boxRepository.save(folder);
+		if (box.getId() == 0) {
+			saved = this.boxRepository.save(box);
 			actor = this.actorService.findByPrincipal();
 			actor.getBoxes().add(saved);
 		} else
-			saved = this.boxRepository.save(folder);
+			saved = this.boxRepository.save(box);
 		return saved;
 	}
 
@@ -124,13 +123,9 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		trashbox = this.create(true);
 
 		inbox.setName("in box");
-		inbox.setMessages(new ArrayList<Message>());
 		outbox.setName("out box");
-		outbox.setMessages(new ArrayList<Message>());
 		trashbox.setName("trash box");
-		trashbox.setMessages(new ArrayList<Message>());
 		notificationbox.setName("notification box");
-		notificationbox.setMessages(new ArrayList<Message>());
 
 		result.add(inbox);
 		result.add(outbox);
@@ -140,13 +135,13 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		return result;
 	}
 
-	public Box save(final Box folder, final Actor actor) {
-		Assert.notNull(folder);
+	public Box save(final Box box, final Actor actor) {
+		Assert.notNull(box);
 		Assert.notNull(actor);
 
 		Box result = null;
 
-		result = this.boxRepository.save(folder);
+		result = this.boxRepository.save(box);
 		actor.getBoxes().add(result);
 		this.actorService.save(actor);
 
@@ -168,37 +163,41 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		return result;
 	}
 
-	public Box findByBoxName(final int userAccountId, final String folderName) {
+	public Box findByBoxName(final int userAccountId, final String boxName) {
 
 		Box result = null;
-		result = this.boxRepository.findByBoxName(userAccountId, folderName);
+		result = this.boxRepository.findByBoxName(userAccountId, boxName);
 		return result;
 	}
 
-	public void checkNotRepeat(final Box folder) {
+	public void checkNotRepeat(final Box box) {
 
-		Assert.notNull(folder);
-
-		final Actor actor = this.actorService.findByPrincipal();
-		final Box folderActor = this.findByBoxName(actor.getUserAccount().getId(), folder.getName());
-		Assert.isNull(folderActor);
-	}
-
-	public void checkPrincipal(final Box folder) {
-
-		Assert.notNull(folder);
+		Assert.notNull(box);
 
 		final Actor actor = this.actorService.findByPrincipal();
-		final Collection<Box> foldersActor = this.boxRepository.findBoxesByUserAccountId(actor.getUserAccount().getId());
-		Assert.isTrue(foldersActor.contains(folder));
+		final Box boxActor = this.findByBoxName(actor.getUserAccount().getId(), box.getName());
+		Assert.isNull(boxActor);
 	}
 
-	public Collection<Box> save(final Collection<Box> folders) {
-		return this.boxRepository.save(folders);
+	public void checkPrincipal(final Box box) {
+
+		Assert.notNull(box);
+
+		final Actor actor = this.actorService.findByPrincipal();
+		final Collection<Box> boxesActor = this.boxRepository.findBoxesByUserAccountId(actor.getUserAccount().getId());
+		Assert.isTrue(boxesActor.contains(box));
 	}
 
-	public void delete(final Collection<Box> folders) {
-		this.boxRepository.delete(folders);
+	public Collection<Box> save(final Collection<Box> boxes) {
+		return this.boxRepository.save(boxes);
+	}
+
+	public void delete(final Collection<Box> boxes) {
+		this.boxRepository.delete(boxes);
+	}
+
+	public boolean exists(final int id) {
+		return this.boxRepository.findOne(id) != null;
 	}
 
 }

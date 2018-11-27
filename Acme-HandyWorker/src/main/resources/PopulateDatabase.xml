@@ -1472,6 +1472,15 @@
 		</property>
 	</bean>
 	
+	<bean id="handyWorker1_box4" class="domain.Box">
+		<property name="name" value="Caja de patatas" />
+		<property name="predefined" value="false" />
+		<property name="messages">
+			<list>
+			</list>
+		</property>
+	</bean>
+	
 	<bean id="handyWorker2_box0" class="domain.Box">
 		<property name="name" value="INBOX" />
 		<property name="predefined" value="true" />
@@ -2902,6 +2911,7 @@
 				<ref bean="handyWorker1_box1" />
 				<ref bean="handyWorker1_box2" />
 				<ref bean="handyWorker1_box3" />
+				<ref bean="handyWorker1_box4" />
 			</list>
 		</property>
 		<property name="make" value="Poco Martin" />
