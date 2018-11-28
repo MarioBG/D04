@@ -4,7 +4,7 @@ package domain;
 import java.util.Collection;
 
 import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import javax.persistence.ManyToMany;
 
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -38,7 +38,7 @@ public class Box extends DomainEntity {
 	private Collection<Message>	messages;
 
 
-	@OneToMany(mappedBy = "box")
+	@ManyToMany(mappedBy = "boxes")
 	public Collection<Message> getMessages() {
 		return this.messages;
 	}

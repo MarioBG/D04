@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.validation.BindingResult;
 
 import repositories.MessageRepository;
 import domain.Actor;
@@ -49,7 +48,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 
 	// Simple CRUD methods ----------------------------------------------------
 
-	public Message create() {
+	public Message create(final Actor recipient) {
 
 		Message message;
 		Actor actor;
@@ -60,9 +59,12 @@ public class MessageService {															//TODO AdministratorService, comprob
 
 		actor = this.actorService.findByPrincipal();
 		message.setSender(actor);
+		message.setRecipient(recipient);
 
 		folder = this.boxService.findByBoxName(actor.getUserAccount().getId(), "OUTBOX");
-		message.setBox(folder);
+		final Collection<Box> boxes = new ArrayList<Box>();
+		boxes.add(folder);
+		message.setBoxes(boxes);
 
 		return message;
 	}
@@ -78,8 +80,10 @@ public class MessageService {															//TODO AdministratorService, comprob
 		actor = this.actorService.findByPrincipal();
 		trashbox = this.boxService.findByBoxName(actor.getUserAccount().getId(), "TRASHBOX");
 
-		if (message.getBox() != trashbox) {
-			message.setBox(trashbox);
+		if (!message.getBoxes().contains(trashbox)) {
+			final Collection<Box> newContent = new ArrayList<Box>();
+			newContent.add(trashbox);
+			message.setBoxes(newContent);
 			saved = this.messageRepository.save(message);
 			trashbox.getMessages().add(saved);
 		} else
@@ -109,34 +113,43 @@ public class MessageService {															//TODO AdministratorService, comprob
 		return this.messageRepository.findAll();
 	}
 
-	public Message save(final Message message) {
+	public Message save(final Message message, Collection<Box> boxesToAdd, Collection<Box> boxesToRemove) {
 
 		Assert.notNull(message);
-		this.boxService.checkPrincipal(message.getBox());
+		Assert.isTrue(message.getBoxes().equals(this.messageRepository.findOne(message.getId()).getBoxes()), "message.error.boxesEditedElsewhere");
+		if (boxesToRemove == null)
+			boxesToRemove = new ArrayList<Box>();
+		if (boxesToAdd == null)
+			boxesToAdd = new ArrayList<Box>();
+		for (final Box b : boxesToRemove)
+			this.boxService.checkPrincipal(b);
 
-		Message saved, copy;
-		Message savedCopy = null;
+		Message saved = new Message();
 		Box outboxSender, inboxRecipient;
 
 		if (message.getId() == 0) {
 			Assert.isTrue(!(message.getRecipient() == null || message.getRecipient().getId() == 0), "message.error.needsRecipient");
 			final Date newMoment = new Date(System.currentTimeMillis() - 1000);
-			copy = this.copy(message);
 
-			inboxRecipient = this.boxService.findByBoxName(copy.getRecipient().getUserAccount().getId(), "in box");
-			copy.setBox(inboxRecipient);
-			savedCopy = this.messageRepository.save(copy);
-			savedCopy.setMoment(newMoment);
-			inboxRecipient.getMessages().add(savedCopy);
-
-			outboxSender = message.getBox();
+			inboxRecipient = this.boxService.findByBoxName(message.getRecipient().getUserAccount().getId(), "INBOX");
+			outboxSender = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "OUTBOX");
+			saved.getBoxes().add(inboxRecipient);
+			saved.getBoxes().add(outboxSender);
 			saved = this.messageRepository.save(message);
 			saved.setMoment(newMoment);
+			inboxRecipient.getMessages().add(saved);
 			outboxSender.getMessages().add(saved);
-		} else
+		} else {
 			saved = this.messageRepository.save(message);
-		if (!saved.getBox().getMessages().contains(saved))
-			saved.getBox().getMessages().add(saved);
+			for (final Box b : boxesToAdd) {
+				b.getMessages().add(saved);
+				message.getBoxes().add(b);
+			}
+			for (final Box b : boxesToRemove) {
+				b.getMessages().remove(saved);
+				message.getBoxes().remove(b);
+			}
+		}
 
 		return saved;
 	}
@@ -147,25 +160,25 @@ public class MessageService {															//TODO AdministratorService, comprob
 		//		Assert.notNull(this.adminService.findByPrincipal());											//TODO Hacer el AdministratorService
 
 		Message saved = null;
-		Message copy, savedCopy;
 		Box outboxSender = null;
-		Box notificationboxRecipient;
+		Box inboxRecipient;
 
 		message.setMoment(new Date(System.currentTimeMillis() - 1000));
 		outboxSender = this.boxService.findByBoxName(message.getSender().getUserAccount().getId(), "OUTBOX");
-		message.setBox(outboxSender);
+		final Collection<Box> tempBoxes = message.getBoxes();
+		tempBoxes.add(outboxSender);
+		message.setBoxes(tempBoxes);
 		final Collection<Actor> recipients = this.actorService.findAll();
 		recipients.remove(this.actorService.findByPrincipal());
 		for (final Actor recipient : recipients) {
 			message.setRecipient(recipient);
-			copy = this.copy(message);
 
-			notificationboxRecipient = this.boxService.findByBoxName(recipient.getUserAccount().getId(), "INBOX");
-			copy.setBox(notificationboxRecipient);
+			inboxRecipient = this.boxService.findByBoxName(recipient.getUserAccount().getId(), "INBOX");
+			tempBoxes.add(inboxRecipient);
+			message.setBoxes(tempBoxes);
 			saved = this.messageRepository.save(message);
 			outboxSender.getMessages().add(saved);
-			savedCopy = this.messageRepository.save(copy);
-			notificationboxRecipient.getMessages().add(savedCopy);
+			inboxRecipient.getMessages().add(saved);
 		}
 
 		return saved;
@@ -173,41 +186,41 @@ public class MessageService {															//TODO AdministratorService, comprob
 
 	// Other business methods -------------------------------------------------
 
-	public Message reconstruct(final Message messagePruned, final BindingResult binding) {
-
-		Assert.notNull(messagePruned);
-		final Actor principal = this.actorService.findByPrincipal();
-
-		Message message;
-
-		if (messagePruned.getId() != 0) {
-			final Box destinationFolder = messagePruned.getBox();
-			message = this.findOne(messagePruned.getId());
-			this.boxService.checkPrincipal(destinationFolder);
-			message.setBox(destinationFolder);
-		} else {
-			message = this.create();
-			message.setMoment(new Date(System.currentTimeMillis() - 1000));
-			message.setSender(principal);
-			message.setBox(this.boxService.findByBoxName(principal.getUserAccount().getId(), "OUTBOX"));
-			message.setSubject(messagePruned.getSubject());
-			message.setBody(messagePruned.getBody());
-			message.setPriority(messagePruned.getPriority());
-			message.setRecipient(messagePruned.getRecipient());
-		}
-
-		//		if (binding != null)
-		//			this.validator.validate(message, binding);
-
-		return message;
-	}
+	//	public Message reconstruct(final Message messagePruned, final BindingResult binding) {
+	//
+	//		Assert.notNull(messagePruned);
+	//		final Actor principal = this.actorService.findByPrincipal();
+	//
+	//		Message message;
+	//
+	//		if (messagePruned.getId() != 0) {
+	//			final Box destinationFolder = messagePruned.getBox();
+	//			message = this.findOne(messagePruned.getId());
+	//			this.boxService.checkPrincipal(destinationFolder);
+	//			message.setBox(destinationFolder);
+	//		} else {
+	//			message = this.create(null);
+	//			message.setMoment(new Date(System.currentTimeMillis() - 1000));
+	//			message.setSender(principal);
+	//			message.setBox(this.boxService.findByBoxName(principal.getUserAccount().getId(), "OUTBOX"));
+	//			message.setSubject(messagePruned.getSubject());
+	//			message.setBody(messagePruned.getBody());
+	//			message.setPriority(messagePruned.getPriority());
+	//			message.setRecipient(messagePruned.getRecipient());
+	//		}
+	//
+	//		//		if (binding != null)
+	//		//			this.validator.validate(message, binding);
+	//
+	//		return message;
+	//	}
 	public Message copy(final Message message) {
 
 		Assert.notNull(message);
 
 		Message result;
 
-		result = this.create();
+		result = this.create(null);
 		result.setSubject(message.getSubject());
 		result.setBody(message.getBody());
 		result.setMoment(message.getMoment());
@@ -235,28 +248,30 @@ public class MessageService {															//TODO AdministratorService, comprob
 		this.messageRepository.delete(messages);
 	}
 
-	public void moveMessageToFolder(final Message message, final Box folder) {
-		Assert.notNull(folder);
+	public void moveMessageToFolder(final Message message, final Box source, final Box destination) {
+		Assert.notNull(source);
+		Assert.notNull(destination);
 		Assert.notNull(message);
-		this.boxService.checkPrincipal(folder);
-		Assert.isTrue(!folder.getMessages().contains(message));
+		this.boxService.checkPrincipal(source);
+		this.boxService.checkPrincipal(destination);
+		Assert.isTrue(!source.getMessages().contains(message));
 
 		final Actor actor = this.actorService.findByPrincipal();
 
-		Assert.isTrue(actor.getBoxes().contains(message.getBox()));
+		Assert.isTrue(actor.getBoxes().contains(source));
+		Assert.isTrue(actor.getBoxes().contains(destination));
 
-		final List<Message> messages = new ArrayList<Message>(folder.getMessages());
-		final Box folderSource = message.getBox();
-		final List<Message> messages2 = new ArrayList<Message>(folderSource.getMessages());
+		final List<Message> messages = new ArrayList<Message>(destination.getMessages());
+		final List<Message> messages2 = new ArrayList<Message>(source.getMessages());
 
 		messages.add(message);
-		folder.setMessages(messages);
+		destination.setMessages(messages);
 		messages2.remove(message);
-		folderSource.setMessages(messages2);
+		source.setMessages(messages2);
 
-		this.boxService.save(folder);
-		message.setBox(folder);
-		this.save(message);
+		this.boxService.save(destination);
+		message.getBoxes().add(destination);
+		this.save(message, null, null);
 	}
 
 	public void checkByPrincipal(final Message message) {

@@ -1,9 +1,11 @@
 
 package domain;
 
+import java.util.Collection;
 import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -65,9 +67,9 @@ public class Message extends DomainEntity {
 
 	// Relationships ----------------------------------------------------------
 
-	private Actor	recipient;
-	private Actor	sender;
-	private Box		box;
+	private Actor			recipient;
+	private Actor			sender;
+	private Collection<Box>	boxes;
 
 
 	@NotNull
@@ -92,13 +94,13 @@ public class Message extends DomainEntity {
 		this.sender = sender;
 	}
 
-	@ManyToOne(optional = false)
-	public Box getBox() {
-		return this.box;
+	@ManyToMany
+	public Collection<Box> getBoxes() {
+		return this.boxes;
 	}
 
-	public void setBox(final Box box) {
-		this.box = box;
+	public void setBoxes(final Collection<Box> boxes) {
+		this.boxes = boxes;
 	}
 
 }

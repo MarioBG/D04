@@ -37,7 +37,7 @@ public class MessageServiceTest extends AbstractTest {
 		Collection<Message> messages;
 		message = this.boxService.findByPrincipal().iterator().next().getMessages().iterator().next();
 		message.setVersion(1337);
-		saved = this.messageService.save(message);
+		saved = this.messageService.save(message, null, null);
 		messages = this.messageService.findAll();
 		Assert.isTrue(messages.contains(saved));
 		this.unauthenticate();
