@@ -23,18 +23,18 @@ public class MessageService {															//TODO AdministratorService, comprob
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private MessageRepository	messageRepository;
+	private MessageRepository		messageRepository;
 
 	// Supporting services ----------------------------------------------------
 
 	@Autowired
-	private BoxService			boxService;
-
-	//	@Autowired
-	//	private AdministratorService	adminService;
+	private BoxService				boxService;
 
 	@Autowired
-	private ActorService		actorService;
+	private AdministratorService	adminService;
+
+	@Autowired
+	private ActorService			actorService;
 
 
 	//	@Autowired
@@ -116,7 +116,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 	public Message save(final Message message, Collection<Box> boxesToAdd, Collection<Box> boxesToRemove) {
 
 		Assert.notNull(message);
-		Assert.isTrue(message.getBoxes().equals(this.messageRepository.findOne(message.getId()).getBoxes()), "message.error.boxesEditedElsewhere");
+		Assert.isTrue(message.getId() == 0 || message.getBoxes().equals(this.messageRepository.findOne(message.getId()).getBoxes()), "message.error.boxesEditedElsewhere");
 		if (boxesToRemove == null)
 			boxesToRemove = new ArrayList<Box>();
 		if (boxesToAdd == null)
@@ -133,12 +133,20 @@ public class MessageService {															//TODO AdministratorService, comprob
 
 			inboxRecipient = this.boxService.findByBoxName(message.getRecipient().getUserAccount().getId(), "INBOX");
 			outboxSender = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "OUTBOX");
-			saved.getBoxes().add(inboxRecipient);
-			saved.getBoxes().add(outboxSender);
+			Collection<Box> boxes = saved.getBoxes();
+			if (boxes == null)
+				boxes = new ArrayList<Box>();
+			boxes.add(inboxRecipient);
+			boxes.add(outboxSender);
+			message.setBoxes(boxes);
 			saved = this.messageRepository.save(message);
 			saved.setMoment(newMoment);
-			inboxRecipient.getMessages().add(saved);
-			outboxSender.getMessages().add(saved);
+			Collection<Message> msgs = inboxRecipient.getMessages();
+			msgs.add(saved);
+			inboxRecipient.setMessages(msgs);
+			msgs = outboxSender.getMessages();
+			msgs.add(saved);
+			outboxSender.setMessages(msgs);
 		} else {
 			saved = this.messageRepository.save(message);
 			for (final Box b : boxesToAdd) {
@@ -157,7 +165,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 	public Message broadcast(final Message message) {
 
 		Assert.notNull(message);
-		//		Assert.notNull(this.adminService.findByPrincipal());											//TODO Hacer el AdministratorService
+		Assert.notNull(this.adminService.findByPrincipal());
 
 		Message saved = null;
 		Box outboxSender = null;
@@ -173,6 +181,7 @@ public class MessageService {															//TODO AdministratorService, comprob
 		for (final Actor recipient : recipients) {
 			message.setRecipient(recipient);
 
+			System.out.println(recipient + ":\n\n" + recipient.getBoxes());
 			inboxRecipient = this.boxService.findByBoxName(recipient.getUserAccount().getId(), "INBOX");
 			tempBoxes.add(inboxRecipient);
 			message.setBoxes(tempBoxes);

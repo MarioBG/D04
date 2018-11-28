@@ -36,7 +36,7 @@ public class BoxServiceTest extends AbstractTest {
 		final Box box;
 		Box saved;
 		Collection<Box> boxs;
-		box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Caja de patatas");
+		box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Test box");
 		box.setVersion(57);
 		saved = this.boxService.save(box);
 		boxs = this.boxService.findAll();
@@ -64,7 +64,7 @@ public class BoxServiceTest extends AbstractTest {
 	@Test
 	public void deleteBoxTest() {
 		this.authenticate("handyWorker1");
-		final Box box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Caja de patatas");
+		final Box box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Test box");
 		Assert.notNull(box);
 		Assert.isTrue(box.getId() != 0);
 		Assert.isTrue(this.boxService.exists(box.getId()));

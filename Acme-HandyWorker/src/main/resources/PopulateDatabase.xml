@@ -1473,7 +1473,7 @@
 	</bean>
 	
 	<bean id="handyWorker1_box4" class="domain.Box">
-		<property name="name" value="Caja de patatas" />
+		<property name="name" value="Test box" />
 		<property name="predefined" value="false" />
 		<property name="messages">
 			<list>
@@ -2853,7 +2853,7 @@
 		<property name="phoneNumber" value="600000000" />
 		<property name="address" value="Seville" />
 		<property name="suspicious" value = "false"/>
-		<property name="userAccount" ref="userAccount1" />
+		<property name="userAccount" ref="userAccount6" />
 		<property name="socialIdentity">
 			<list>
 				<ref bean="socialIdentity9"/>
