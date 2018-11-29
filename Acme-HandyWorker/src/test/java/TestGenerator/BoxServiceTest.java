@@ -35,12 +35,26 @@ public class BoxServiceTest extends AbstractTest {
 		this.authenticate("handyWorker1");
 		final Box box;
 		Box saved;
-		Collection<Box> boxs;
+		Collection<Box> boxes;
 		box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Test box");
 		box.setVersion(57);
 		saved = this.boxService.save(box);
-		boxs = this.boxService.findAll();
-		Assert.isTrue(boxs.contains(saved));
+		boxes = this.boxService.findAll();
+		Assert.isTrue(boxes.contains(saved));
+		this.unauthenticate();
+	}
+
+	@Test
+	public void createBoxTest() {
+		this.authenticate("handyWorker1");
+		final Box box;
+		Box saved;
+		Collection<Box> boxes;
+		box = this.boxService.create(false);
+		box.setName("Cajita bonita");
+		saved = this.boxService.save(box);
+		boxes = this.boxService.findAll();
+		Assert.isTrue(boxes.contains(saved));
 		this.unauthenticate();
 	}
 
