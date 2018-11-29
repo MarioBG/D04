@@ -1,8 +1,15 @@
 
 package services;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -10,15 +17,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import domain.Actor;
-import domain.Administrator;
-import domain.Box;
-import domain.Message;
-import domain.SocialIdentity;
 import repositories.AdministratorRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
+import domain.Actor;
+import domain.Administrator;
+import domain.Box;
+import domain.Customer;
+import domain.Endorsement;
+import domain.HandyWorker;
+import domain.Message;
+import domain.SocialIdentity;
 
 @Service
 @Transactional
@@ -31,23 +41,32 @@ public class AdministratorService {
 
 	@Autowired
 	private ActorService			actorservice;
-	
+
 	@Autowired
-	LoginService loginservice;
-	
+	private CustomerService			customerService;
+
 	@Autowired
-	private MessageService messageservice;
+	private HandyWorkerService		handyWorkerService;
+
+	@Autowired
+	LoginService					loginservice;
+
+	@Autowired
+	private MessageService			messageservice;
+
+	@Autowired
+	private EndorsementService		endorsementService;
 
 
 	// Supporting services ----------------------------------------------------
 
 	// Simple CRUD methods ----------------------------------------------------
-	
-	public void sendAll(Message message) {
+
+	public void sendAll(final Message message) {
 		Assert.notNull(message);
-		
-		Actor self = actorservice.findSelf();
-		messageservice.sendMessage(actorservice.findAllUsername(self.getId()), message);
+
+		final Actor self = this.actorservice.findSelf();
+		this.messageservice.sendMessage(this.actorservice.findAllUsername(self.getId()), message);
 	}
 
 	public Collection<Administrator> findAll() {
@@ -131,9 +150,9 @@ public class AdministratorService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
-		Collection<Box> boxes = new LinkedList<>();
+		final Collection<Box> boxes = new LinkedList<>();
 		result.setBoxes(boxes);
-		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		final Collection<SocialIdentity> socialIdentity = new LinkedList<>();
 		result.setSocialIdentity(socialIdentity);
 		result.setUserAccount(userAccount);
 
@@ -146,10 +165,59 @@ public class AdministratorService {
 		Assert.isTrue(this.administratorRepository.exists(administrator.getId()));
 		this.administratorRepository.delete(administrator);
 	}
-	
-	public UserAccount changeEnabledActor(UserAccount userAccount) {
+
+	public Map<Customer, Double> calculateCustomerScore() {
+
+		final Pattern badPattern = Pattern.compile("");										//TODO bad words y good words
+		final Pattern goodPattern = Pattern.compile("");
+		Matcher good, bad = null;
+		final Map<Customer, Double> ans = new HashMap<Customer, Double>();
+		for (final Customer c : this.customerService.findAll()) {
+			Double score = 0d;
+			for (final Endorsement e : this.endorsementService.findAll())
+				if (e.getCustomer() != null && e.getCustomer().equals(c)) {
+					good = goodPattern.matcher(e.getComment());
+					bad = badPattern.matcher(e.getComment());
+					while (good.find())
+						score++;
+					while (bad.find())
+						score++;
+				}
+		}
+		final List<Double> values = new ArrayList<Double>(ans.values());
+		Collections.sort(values);
+		for (final Customer c : ans.keySet())
+			ans.put(c, (-1 + ((ans.get(c) - values.get(0)) * (2))) / (values.get(values.size() - 1) - values.get(0)));
+		return ans;
+	}
+
+	public Map<HandyWorker, Double> calculateHandyWorkerScore() {
+
+		final Pattern badPattern = Pattern.compile("");										//TODO bad words y good words
+		final Pattern goodPattern = Pattern.compile("");
+		Matcher good, bad = null;
+		final Map<HandyWorker, Double> ans = new HashMap<HandyWorker, Double>();
+		for (final HandyWorker c : this.handyWorkerService.findAll()) {
+			Double score = 0d;
+			for (final Endorsement e : this.endorsementService.findAll())
+				if (e.getCustomer() != null && e.getCustomer().equals(c)) {
+					good = goodPattern.matcher(e.getComment());
+					bad = badPattern.matcher(e.getComment());
+					while (good.find())
+						score++;
+					while (bad.find())
+						score++;
+				}
+		}
+		final List<Double> values = new ArrayList<Double>(ans.values());
+		Collections.sort(values);
+		for (final HandyWorker c : ans.keySet())
+			ans.put(c, (-1 + ((ans.get(c) - values.get(0)) * (2))) / (values.get(values.size() - 1) - values.get(0)));
+		return ans;
+	}
+	public UserAccount changeEnabledActor(final UserAccount userAccount) {
 		Assert.notNull(userAccount);
-		
+
 		userAccount.setEnabled(!userAccount.isEnabled());
 		return this.loginservice.save(userAccount);
 	}

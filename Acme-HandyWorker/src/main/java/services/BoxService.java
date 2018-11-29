@@ -1,6 +1,8 @@
+
 package services;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,113 +10,133 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import repositories.BoxRepository;
 import domain.Actor;
 import domain.Box;
-import repositories.BoxRepository;
 
 @Service
 @Transactional
 public class BoxService {
-	
+
 	@Autowired
-	private BoxRepository boxrepository;
+	private BoxRepository	boxrepository;
 	@Autowired
-	private ActorService actorservice;
-	
-	public Box newBox(Box name) {
-		Actor current = actorservice.findSelf();
-		
-		Box saved = boxrepository.save(name);
-		
+	private ActorService	actorservice;
+
+
+	public Box newBox(final Box name) {
+		final Actor current = this.actorservice.findSelf();
+
+		final Box saved = this.boxrepository.save(name);
+
 		current.getBoxes().add(saved);
-		
-		actorservice.save(current);
-		
+
+		this.actorservice.save(current);
+
 		return saved;
 	}
-	
-	public boolean exists(Integer id) {
-		return actorservice.exists(id);
+
+	public Box create(final String name, final boolean predefined) {
+		final Box box = new Box();
+		box.setName(name);
+		box.setPredefined(predefined);
+		return this.newBox(box);
 	}
 
-	public Box findInbox(Actor a) {
+	public boolean exists(final Integer id) {
+		return this.actorservice.exists(id);
+	}
+
+	public Collection<Box> defaultFolders() {
+
+		final Collection<Box> result = new LinkedList<Box>();
+		Box inbox, outbox, notificationbox, trashbox;
+
+		inbox = this.create("INBOX", true);
+		outbox = this.create("OUTBOX", true);
+		notificationbox = this.create("SPAMBOX", true);
+		trashbox = this.create("TRASHBOX", true);
+
+		result.add(inbox);
+		result.add(outbox);
+		result.add(notificationbox);
+		result.add(trashbox);
+
+		return result;
+	}
+
+	public Box findInbox(final Actor a) {
 		Assert.notNull(a);
-		
-		for(Box b : a.getBoxes()) {
-			if("INBOX".equals(b.getName())) {
+
+		for (final Box b : a.getBoxes())
+			if ("INBOX".equals(b.getName()))
 				return b;
-			}
-		}
-		
+
 		return null;
 	}
 
-	public Box findOutbox(Actor a) {
+	public Box findOutbox(final Actor a) {
 		Assert.notNull(a);
-		
-		for(Box b : a.getBoxes()) {
-			if("OUTBOX".equals(b.getName())) {
+
+		for (final Box b : a.getBoxes())
+			if ("OUTBOX".equals(b.getName()))
 				return b;
-			}
-		}
-		
-		return null;
-	}
-	
-	public Box findTashBox(Actor a) {
-		Assert.notNull(a);
-		
-		for(Box b : a.getBoxes()) {
-			if("TRASHBOX".equals(b.getName())) {
-				return b;
-			}
-		}
-		
+
 		return null;
 	}
 
-	public Box getOutBoxFolderFromActorId(int id) {
-		return boxrepository.getOutBoxFolderFromActorId(id);
+	public Box findTashBox(final Actor a) {
+		Assert.notNull(a);
+
+		for (final Box b : a.getBoxes())
+			if ("TRASHBOX".equals(b.getName()))
+				return b;
+
+		return null;
 	}
 
-	public Box getInBoxFolderFromActorId(int id) {
-		return boxrepository.getInBoxFolderFromActorId(id);
+	public Box getOutBoxFolderFromActorId(final int id) {
+		return this.boxrepository.getOutBoxFolderFromActorId(id);
 	}
 
-	public Box getSpamBoxFolderFromActorId(int id) {
-		return boxrepository.getSpamBoxFolderFromActorId(id);
+	public Box getInBoxFolderFromActorId(final int id) {
+		return this.boxrepository.getInBoxFolderFromActorId(id);
 	}
 
-	public Box getTrashBoxFolderFromActorId(int id) {
-		return boxrepository.getTrashBoxFolderFromActorId(id);
-	}
-	
-	public List<Box> save(Iterable<Box> entities) {
-		return boxrepository.save(entities);
+	public Box getSpamBoxFolderFromActorId(final int id) {
+		return this.boxrepository.getSpamBoxFolderFromActorId(id);
 	}
 
-	public Box save(Box entity) {
+	public Box getTrashBoxFolderFromActorId(final int id) {
+		return this.boxrepository.getTrashBoxFolderFromActorId(id);
+	}
+
+	public List<Box> save(final Iterable<Box> entities) {
+		return this.boxrepository.save(entities);
+	}
+
+	public Box save(final Box entity) {
 		Assert.notNull(entity);
-		return boxrepository.save(entity);
+		return this.boxrepository.save(entity);
 	}
 
-	public Collection<Box> findBoxesByUserAccountId(int userAccountId) {
-		return boxrepository.findBoxesByUserAccountId(userAccountId);
+	public Collection<Box> findBoxesByUserAccountId(final int userAccountId) {
+		return this.boxrepository.findBoxesByUserAccountId(userAccountId);
 	}
 
 	public List<Box> findAll() {
-		return boxrepository.findAll();
+		return this.boxrepository.findAll();
 	}
 
-	public Box findOne(Integer id) {
+	public Box findOne(final Integer id) {
 		Assert.notNull(id);
-		return boxrepository.findOne(id);
+		return this.boxrepository.findOne(id);
 	}
 
-	public void delete(Box entity) {
+	public void delete(final Box entity) {
 		Assert.notNull(entity);
 		Assert.isTrue(!"INBOX".equals(entity.getName()) && !"OUTBOX".equals(entity.getName()) && !"TRASHBOX".equals(entity.getName()) && !"SPAMBOX".equals(entity.getName()));
-		boxrepository.delete(entity);
+		this.boxrepository.delete(entity);
 	}
 
 }

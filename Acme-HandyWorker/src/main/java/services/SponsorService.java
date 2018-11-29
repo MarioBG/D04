@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import domain.Box;
-import domain.SocialIdentity;
-import domain.Sponsor;
-import domain.Sponsorship;
 import repositories.SponsorRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
+import domain.Box;
+import domain.SocialIdentity;
+import domain.Sponsor;
+import domain.Sponsorship;
 
 @Service
 @Transactional
@@ -27,6 +27,9 @@ public class SponsorService {
 
 	@Autowired
 	private SponsorRepository	sponsorRepository;
+
+	@Autowired
+	private BoxService			boxService;
 
 
 	// Supporting services ----------------------------------------------------
@@ -96,6 +99,17 @@ public class SponsorService {
 
 	}
 
+	public Sponsor findByPrincipal() {
+		Sponsor res;
+		UserAccount userAccount;
+		userAccount = LoginService.getPrincipal();
+		if (userAccount == null)
+			res = null;
+		else
+			res = this.sponsorRepository.findByUserAccountId(userAccount.getId());
+		return res;
+	}
+
 	public Sponsor create() {
 
 		Sponsor result;
@@ -108,11 +122,11 @@ public class SponsorService {
 
 		result.setSuspicious(false);
 
-		authority.setAuthority("SPONSOR");
+		authority.setAuthority(Authority.SPONSOR);
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
-		final Collection<Box> boxes = new LinkedList<>();
+		final Collection<Box> boxes = this.boxService.defaultFolders();
 		result.setBoxes(boxes);
 		final Collection<Sponsorship> sponsorships = new LinkedList<>();
 		result.setSponsorships(sponsorships);
@@ -123,7 +137,6 @@ public class SponsorService {
 		return result;
 
 	}
-
 	public void delete(final Sponsor sponsor) {
 		Assert.notNull(sponsor);
 		Assert.isTrue(this.sponsorRepository.exists(sponsor.getId()));
