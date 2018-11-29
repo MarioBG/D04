@@ -30,7 +30,4 @@ public interface BoxRepository extends JpaRepository<Box, Integer> {
 	@Query("select b from Actor a join a.boxes b where a.userAccount.id = ?1")
 	Collection<Box> findBoxesByUserAccountId(int userAccountId);
 
-	@Query("select distinct f from Box f, Actor a join a.boxes f where a.userAccount.id = ?1 and f.name = ?2")
-	Box findByBoxName(int userAccountId, String boxName);
-
 }

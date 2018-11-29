@@ -4,7 +4,7 @@ package domain;
 import java.util.Collection;
 
 import javax.persistence.Entity;
-import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -36,15 +36,24 @@ public class Box extends DomainEntity {
 	// Relationships ----------------------------------------------------------
 
 	private Collection<Message>	messages;
+	private Collection<Box>		children;
 
-
-	@ManyToMany(mappedBy = "boxes")
+	@OneToMany
 	public Collection<Message> getMessages() {
 		return this.messages;
 	}
 
 	public void setMessages(final Collection<Message> messages) {
 		this.messages = messages;
+	}
+
+	@OneToMany
+	public Collection<Box> getChildren() {
+		return this.children;
+	}
+
+	public void setChildren(final Collection<Box> children) {
+		this.children = children;
 	}
 
 }

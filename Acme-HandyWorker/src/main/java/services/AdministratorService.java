@@ -10,13 +10,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import repositories.ActorRepository;
+import domain.Actor;
+import domain.Administrator;
+import domain.Box;
+import domain.Message;
+import domain.SocialIdentity;
 import repositories.AdministratorRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
-import domain.Actor;
-import domain.Administrator;
 
 @Service
 @Transactional
@@ -28,15 +30,25 @@ public class AdministratorService {
 	private AdministratorRepository	administratorRepository;
 
 	@Autowired
-	private ActorRepository			actorRepository;
-
+	private ActorService			actorservice;
+	
 	@Autowired
-	LoginService					loginservice;
+	LoginService loginservice;
+	
+	@Autowired
+	private MessageService messageservice;
 
 
 	// Supporting services ----------------------------------------------------
 
 	// Simple CRUD methods ----------------------------------------------------
+	
+	public void sendAll(Message message) {
+		Assert.notNull(message);
+		
+		Actor self = actorservice.findSelf();
+		messageservice.sendMessage(actorservice.findAllUsername(self.getId()), message);
+	}
 
 	public Collection<Administrator> findAll() {
 		Collection<Administrator> result;
@@ -49,7 +61,7 @@ public class AdministratorService {
 
 	public Collection<Actor> findSuspiciousActor() {
 		final Collection<Actor> actors = new LinkedList<>();
-		actors.addAll(this.actorRepository.findSuspiciousActor());
+		actors.addAll(this.actorservice.findSuspiciousActor());
 		return actors;
 
 	}
@@ -119,6 +131,10 @@ public class AdministratorService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
+		Collection<Box> boxes = new LinkedList<>();
+		result.setBoxes(boxes);
+		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		result.setSocialIdentity(socialIdentity);
 		result.setUserAccount(userAccount);
 
 		return result;
@@ -130,27 +146,12 @@ public class AdministratorService {
 		Assert.isTrue(this.administratorRepository.exists(administrator.getId()));
 		this.administratorRepository.delete(administrator);
 	}
-
-	public UserAccount changeEnabledActor(final UserAccount userAccount) {
+	
+	public UserAccount changeEnabledActor(UserAccount userAccount) {
 		Assert.notNull(userAccount);
-
+		
 		userAccount.setEnabled(!userAccount.isEnabled());
 		return this.loginservice.save(userAccount);
-	}
-
-	public Administrator findByPrincipal() {
-		Administrator res;
-		UserAccount userAccount;
-		userAccount = LoginService.getPrincipal();
-
-		if (userAccount == null)
-			res = null;
-		else {
-			final int id = userAccount.getId();
-			res = this.administratorRepository.findByUserAccountId(id);
-		}
-
-		return res;
 	}
 
 }

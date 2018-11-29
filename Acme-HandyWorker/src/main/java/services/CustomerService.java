@@ -2,6 +2,9 @@
 package services;
 
 import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -9,13 +12,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import domain.Application;
+import domain.Box;
+import domain.Complaint;
+import domain.CreditCard;
+import domain.Customer;
+import domain.Endorsement;
+import domain.FixUpTask;
+import domain.SocialIdentity;
 import repositories.CustomerRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
-import domain.Application;
-import domain.Customer;
-import domain.FixUpTask;
 
 @Service
 @Transactional
@@ -30,6 +38,9 @@ public class CustomerService {
 
 	@Autowired
 	private FixUpTaskService	fixUpTaskService;
+	
+	@Autowired
+	private ApplicationService applicationService;
 
 
 	// Simple CRUD methods ----------------------------------------------------
@@ -108,6 +119,16 @@ public class CustomerService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
+		Collection<FixUpTask> fixUpTasks = new LinkedList<>();
+		result.setFixUpTasks(fixUpTasks);
+		Collection<Box> boxes = new LinkedList<>();
+		result.setBoxes(boxes);
+		Collection<Endorsement> endorsements = new LinkedList<>();
+		result.setEndorsements(endorsements);
+		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		result.setSocialIdentity(socialIdentity);
+		Collection<Complaint> complaints = new LinkedList<>();
+		result.setComplaints(complaints);
 		result.setUserAccount(userAccount);
 
 		return result;
@@ -140,5 +161,116 @@ public class CustomerService {
 		final Customer res = this.customerRepository.findCustomerByFixUpTaskId(fixUpTask.getId());
 		
 		return res;
+	}
+	
+	public FixUpTask findOneFixUptask(final int fixUpTaskId) {
+		Assert.isTrue(fixUpTaskId != 0);
+		final UserAccount logedUserAccount;
+		Authority authority;
+		FixUpTask result;
+		authority = new Authority();
+		authority.setAuthority("CUSTOMER");
+		logedUserAccount = LoginService.getPrincipal();
+
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+
+		result = this.fixUpTaskService.findOne(fixUpTaskId);
+		Assert.notNull(result);
+		Assert.isTrue(findCustomerByFixUpTask(result).getUserAccount().equals(logedUserAccount));
+
+		return result;
+	}
+
+	public List<FixUpTask> findAllFixUpTask() {
+		return fixUpTaskService.findAll();
+	}
+
+	public FixUpTask saveCustomerFixUpTask(final FixUpTask fixUpTask) {
+		FixUpTask result, saved;
+		final UserAccount logedUserAccount;
+		Authority authority;
+
+		authority = new Authority();
+		authority.setAuthority("CUSTOMER");
+		Assert.notNull(fixUpTask, "fixUpTask.not.null");
+		final Customer customer = findCustomerByFixUpTask(fixUpTask);
+
+		if (this.exists(fixUpTask.getId())) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "customer.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(customer.getUserAccount()), "customer.notEqual.userAccount");
+			saved = this.fixUpTaskService.findOne(fixUpTask.getId());
+			Assert.notNull(saved, "fixUpTask.not.null");
+			Assert.isTrue(customer.getUserAccount().isAccountNonLocked() && !(customer.isSuspicious()),
+					"customer.notEqual.accountOrSuspicious");
+			result = this.fixUpTaskService.save(fixUpTask);
+			Assert.notNull(result);
+
+		} else {
+			result = this.fixUpTaskService.save(fixUpTask);
+			Assert.notNull(result);
+		}
+		return result;
+
+	}
+	
+	public void deleteFixUpTask(final FixUpTask fixUpTask) {
+		Assert.isTrue(fixUpTask.getId() != 0);
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("CUSTOMER");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		Assert.isTrue(
+			findCustomerByFixUpTask(fixUpTask).getUserAccount().equals(logedUserAccount));
+			this.fixUpTaskService.delete(fixUpTask);
+	}
+	
+
+	public Application saveCustomerApplication(final Application application, String comment, CreditCard creditCard) {
+		final Application result, saved;
+		Assert.notNull(application);
+		Assert.isTrue(application.getId() != 0);
+		final UserAccount userAccount = LoginService.getPrincipal();
+		final Date currentMoment = new Date(System.currentTimeMillis() - 1);
+		final Authority authority;
+		final UserAccount logedUserAccount;
+		authority = new Authority();
+		authority.setAuthority("CUSTOMER");
+
+		if (this.exists(application.getId()) && application.getStatus().equals("PENDING")
+				&& userAccount.getAuthorities().contains(authority)
+				&& applicationService.findApplicationsByCustomer(findCustomerByApplication(application))
+						.contains(application)) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "customer.notLogged ");
+			Assert.isTrue(
+					logedUserAccount
+							.equals(findCustomerByApplication(application).getUserAccount()),
+					"customer.notEqual.userAccount");
+			if (application.getApplicationMoment().compareTo(currentMoment) < 0) {
+				saved = applicationService.findOne(application.getId());
+				Assert.notNull(saved, "application.not.null");
+				application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
+				application.setStatus("REJECTED");
+				result = applicationService.save(application);
+				return result;
+			} else {
+				saved = applicationService.findOne(application.getId());
+				Assert.notNull(saved, "application.not.null");
+				if(!comment.equals(null)) {
+				application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
+				}
+				application.setCreditCard(creditCard);
+				application.setStatus("ACCEPTED");
+				result = applicationService.save(application);
+				return result;
+			}
+		} else {
+
+			result = applicationService.save(application);
+			return result;
+		}
 	}
 }

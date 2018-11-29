@@ -1,7 +1,8 @@
-
 package TestGenerator;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 
 import javax.transaction.Transactional;
 
@@ -12,78 +13,68 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Assert;
 
-import services.ActorService;
-import services.BoxService;
-import utilities.AbstractTest;
+import domain.Actor;
 import domain.Box;
+import domain.Message;
+import services.ActorService;
+import services.BoxServices;
+import utilities.AbstractTest;
 
-@ContextConfiguration(locations = {
-	"classpath:spring/junit.xml", "classpath:spring/datasource.xml", "classpath:spring/config/packages.xml"
-})
+@ContextConfiguration(locations = { "classpath:spring/junit.xml", "classpath:spring/datasource.xml",
+		"classpath:spring/config/packages.xml" })
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 public class BoxServiceTest extends AbstractTest {
 
 	@Autowired
-	private BoxService		boxService;
+	private BoxServices boxService;
 	@Autowired
-	private ActorService	actorService;
-
-
+	private ActorService actorservice;
+	
 	@Test
-	public void saveBoxTest() {
-		this.authenticate("handyWorker1");
-		final Box box;
-		Box saved;
-		Collection<Box> boxes;
-		box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Test box");
-		box.setVersion(57);
-		saved = this.boxService.save(box);
-		boxes = this.boxService.findAll();
-		Assert.isTrue(boxes.contains(saved));
-		this.unauthenticate();
+	public void newBox() {
+		Actor sender = actorservice.findByUsernames(Arrays.asList("admin1")).iterator().next();
+		this.authenticate(sender.getUserAccount().getUsername());
+		
+		Box auxbox = new Box();
+		auxbox.setChildren(new LinkedList<Box>());
+		auxbox.setMessages(new LinkedList<Message>());
+		auxbox.setName("AUXBOX");
+		auxbox.setPredefined(false);
+		
+		Box saved = boxService.newBox(auxbox);
+		
+		sender = actorservice.findByUsernames(Arrays.asList("admin1")).iterator().next();
+		
+		Assert.isTrue(sender.getBoxes().contains(saved));
 	}
 
 	@Test
-	public void createBoxTest() {
-		this.authenticate("handyWorker1");
-		final Box box;
-		Box saved;
-		Collection<Box> boxes;
-		box = this.boxService.create(false);
-		box.setName("Cajita bonita");
-		saved = this.boxService.save(box);
-		boxes = this.boxService.findAll();
-		Assert.isTrue(boxes.contains(saved));
-		this.unauthenticate();
+	public void saveBoxTest() {
+		Box box, saved;
+		Collection<Box> boxs;
+		box = boxService.findAll().iterator().next();
+		box.setVersion(57);
+		saved = boxService.save(box);
+		boxs = boxService.findAll();
+		Assert.isTrue(boxs.contains(saved));
 	}
 
 	@Test
 	public void findAllBoxTest() {
 		Collection<Box> result;
-		result = this.boxService.findAll();
+		result = boxService.findAll();
 		Assert.notNull(result);
 	}
 
 	@Test
 	public void findOneBoxTest() {
-		final Box box = this.boxService.findAll().iterator().next();
-		final int boxId = box.getId();
+		Box box = boxService.findAll().iterator().next();
+		int boxId = box.getId();
 		Assert.isTrue(boxId != 0);
 		Box result;
-		result = this.boxService.findOne(boxId);
+		result = boxService.findOne(boxId);
 		Assert.notNull(result);
-	}
-
-	@Test
-	public void deleteBoxTest() {
-		this.authenticate("handyWorker1");
-		final Box box = this.boxService.findByBoxName(this.actorService.findByPrincipal().getUserAccount().getId(), "Test box");
-		Assert.notNull(box);
-		Assert.isTrue(box.getId() != 0);
-		Assert.isTrue(this.boxService.exists(box.getId()));
-		this.boxService.delete(box);
-		this.unauthenticate();
 	}
 
 }

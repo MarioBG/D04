@@ -12,9 +12,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Assert;
 
-import services.CustomerService;
-import utilities.AbstractTest;
+import domain.Application;
+import domain.CreditCard;
 import domain.Customer;
+import domain.FixUpTask;
+import security.LoginService;
+import services.ApplicationService;
+import services.CustomerService;
+import services.FixUpTaskService;
+import utilities.AbstractTest;
 
 @ContextConfiguration(locations = {
 	"classpath:spring/junit.xml", "classpath:spring/datasource.xml", "classpath:spring/config/packages.xml"
@@ -25,6 +31,12 @@ public class CustomerServiceTest extends AbstractTest {
 
 	@Autowired
 	private CustomerService	customerService;
+	
+	@Autowired
+	private FixUpTaskService fixuptaskService;
+	
+	@Autowired
+	private ApplicationService applicationService;
 
 
 	@Test
@@ -83,6 +95,50 @@ public class CustomerServiceTest extends AbstractTest {
 		Assert.isNull(customer.getMiddleName());
 		Assert.isNull(customer.getSurname());
 	}
+	
+	@Test
+	public void saveCustomerFixUpTaskTest() {
+		final FixUpTask created;
+		final FixUpTask saved;
+		final FixUpTask copyCreated;
+		created = this.fixuptaskService.findAll().iterator().next();
+		this.authenticate(this.customerService.findCustomerByFixUpTask(created).getUserAccount().getUsername());
+		copyCreated = this.copyFixUpTask(created);
+		copyCreated.setDescription("Test");
+		saved = this.customerService.saveCustomerFixUpTask(copyCreated);
+		Assert.isTrue(this.fixuptaskService.findAll().contains(saved));
+		Assert.isTrue(saved.getDescription().equals("Test"));
+	}
+	
+	@Test
+	public void saveApplicationCustomerTest() {
+		Application created;
+		Application saved;
+		Application copyCreated;
+		Customer customer;
+		super.authenticate("customer1");
+
+		customer = this.customerService.findCustomerByUserAccount(LoginService.getPrincipal());
+		for (final Application a : this.applicationService.findApplicationsByCustomer(customer)) {
+			if (a.getStatus().equals("PENDING")) {
+				created = a;
+				copyCreated = created;
+				copyCreated.setStatus("ACCEPTED");
+				final String comment = "Test Comment";
+				final CreditCard creditCard = new CreditCard();
+				creditCard.setBrandName("VISA");
+				creditCard.setCVV(123);
+				creditCard.setExpirationMonth(12);
+				creditCard.setExpirationYear(2020);
+				creditCard.setHolderName("Paco Asencio");
+				creditCard.setNumber("1234567812345678");
+				saved = this.customerService.saveCustomerApplication(copyCreated, comment, creditCard);
+				Assert.isTrue(this.applicationService.findAll().contains(saved));
+				Assert.isTrue(saved.getStatus().equals("ACCEPTED"));
+			}
+		}
+
+	}
 
 	private Customer copyCustomer(final Customer customer) {
 		Customer result;
@@ -104,6 +160,27 @@ public class CustomerServiceTest extends AbstractTest {
 		result.setUserAccount(customer.getUserAccount());
 		result.setVersion(customer.getVersion());
 
+		return result;
+	}
+	
+	private FixUpTask copyFixUpTask(final FixUpTask fixUpTask) {
+		FixUpTask result;
+
+		result = new FixUpTask();
+		result.setAddress(fixUpTask.getAddress());
+		result.setApplications(fixUpTask.getApplications());
+		result.setCategory(fixUpTask.getCategory());
+		result.setComplaints(fixUpTask.getComplaints());
+		result.setDescription(fixUpTask.getDescription());
+		result.setEndDate(fixUpTask.getEndDate());
+		result.setMaxPrice(fixUpTask.getMaxPrice());
+		result.setId(fixUpTask.getId());
+		result.setPhases(fixUpTask.getPhases());
+		result.setPublicationMoment(fixUpTask.getPublicationMoment());
+		result.setStartDate(fixUpTask.getStartDate());
+		result.setTicker(fixUpTask.getTicker());
+		result.setWarranty(fixUpTask.getWarranty());
+		result.setVersion(fixUpTask.getVersion());
 		return result;
 	}
 }

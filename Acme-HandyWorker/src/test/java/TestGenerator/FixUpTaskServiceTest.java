@@ -2,6 +2,7 @@
 package TestGenerator;
 
 import java.util.Collection;
+import java.util.List;
 
 import javax.transaction.Transactional;
 
@@ -30,20 +31,13 @@ public class FixUpTaskServiceTest extends AbstractTest {
 	@Autowired
 	private CustomerService		customerService;
 
-
 	@Test
-	public void saveFixUpTaskTest() {
-		final FixUpTask created;
-		final FixUpTask saved;
-		final FixUpTask copyCreated;
-		created = this.fixuptaskService.findAll().iterator().next();
-		this.authenticate(this.customerService.findCustomerByFixUpTask(created).getUserAccount().getUsername());
-		copyCreated = this.copyFixUpTask(created);
-		copyCreated.setDescription("Test");
-		saved = this.fixuptaskService.save(copyCreated);
-		Assert.isTrue(this.fixuptaskService.findAll().contains(saved));
-		Assert.isTrue(saved.getDescription().equals("Test"));
+	public void findFixUpTask() {
+		List<FixUpTask> list = fixuptaskService.filter("970203", 10);
+		
+		Assert.isTrue(!list.isEmpty());
 	}
+
 
 	@Test
 	public void findAllFixUpTaskTest() {
@@ -81,29 +75,10 @@ public class FixUpTaskServiceTest extends AbstractTest {
 		Collection<FixUpTask> fixUpTasks;
 		final Customer customer = this.customerService.findAll().iterator().next();
 		Assert.notNull(customer);
-		fixUpTasks = this.fixuptaskService.findByCustomer(customer);
+		fixUpTasks = this.fixuptaskService.findFixUpTasksByCustomer(customer);
 		Assert.notNull(fixUpTasks);
 	}
 
-	private FixUpTask copyFixUpTask(final FixUpTask fixUpTask) {
-		FixUpTask result;
-
-		result = new FixUpTask();
-		result.setAddress(fixUpTask.getAddress());
-		result.setApplications(fixUpTask.getApplications());
-		result.setCategory(fixUpTask.getCategory());
-		result.setComplaints(fixUpTask.getComplaints());
-		result.setDescription(fixUpTask.getDescription());
-		result.setEndDate(fixUpTask.getEndDate());
-		result.setMaxPrice(fixUpTask.getMaxPrice());
-		result.setId(fixUpTask.getId());
-		result.setPhases(fixUpTask.getPhases());
-		result.setPublicationMoment(fixUpTask.getPublicationMoment());
-		result.setStartDate(fixUpTask.getStartDate());
-		result.setTicker(fixUpTask.getTicker());
-		result.setWarranty(fixUpTask.getWarranty());
-		result.setVersion(fixUpTask.getVersion());
-		return result;
-	}
+	
 
 }

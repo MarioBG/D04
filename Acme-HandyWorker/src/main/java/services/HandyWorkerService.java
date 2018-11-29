@@ -2,6 +2,8 @@
 package services;
 
 import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -9,13 +11,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import domain.Application;
+import domain.Box;
+import domain.Customer;
+import domain.Endorsement;
+import domain.FixUpTask;
+import domain.HandyWorker;
+import domain.Phase;
+import domain.SocialIdentity;
+import domain.Tutorial;
 import repositories.HandyWorkerRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
-import domain.Application;
-import domain.FixUpTask;
-import domain.HandyWorker;
 
 @Service
 @Transactional
@@ -24,16 +32,18 @@ public class HandyWorkerService {
 	// Managed repository -----------------------------------------------------
 
 	@Autowired
-	private HandyWorkerRepository	handyWorkerRepository;
+	private HandyWorkerRepository handyWorkerRepository;
+
+	@Autowired
+	private CustomerService customerService;
+
+	@Autowired
+	private FixUpTaskService fixUpTaskService;
+
+	@Autowired
+	private ApplicationService applicationService;
 
 	// Supporting services ----------------------------------------------------
-
-	@Autowired
-	private FinderService			finderService;
-
-	@Autowired
-	private CurriculumService		curriculumService;
-
 
 	// Simple CRUD methods ----------------------------------------------------
 
@@ -78,13 +88,19 @@ public class HandyWorkerService {
 			Assert.isTrue(logedUserAccount.equals(handyWorker.getUserAccount()), "handyWorker.notEqual.userAccount");
 			saved = this.handyWorkerRepository.findOne(handyWorker.getId());
 			Assert.notNull(saved, "handyWorker.not.null");
-			Assert.isTrue(saved.getUserAccount().getUsername().equals(handyWorker.getUserAccount().getUsername()), "handyWorker.notEqual.username");
-			Assert.isTrue(handyWorker.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "handyWorker.notEqual.password");
-			Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && handyWorker.isSuspicious() == saved.isSuspicious(), "handyWorker.notEqual.accountOrSuspicious");
+			Assert.isTrue(saved.getUserAccount().getUsername().equals(handyWorker.getUserAccount().getUsername()),
+					"handyWorker.notEqual.username");
+			Assert.isTrue(handyWorker.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()),
+					"handyWorker.notEqual.password");
+			Assert.isTrue(
+					handyWorker.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked()
+							&& handyWorker.isSuspicious() == saved.isSuspicious(),
+					"handyWorker.notEqual.accountOrSuspicious");
 
 		} else {
 			Assert.isTrue(handyWorker.isSuspicious() == false, "handyWorker.notSuspicious.false");
-			handyWorker.getUserAccount().setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
+			handyWorker.getUserAccount()
+					.setPassword(encoder.encodePassword(handyWorker.getUserAccount().getPassword(), null));
 			handyWorker.getUserAccount().setEnabled(true);
 
 		}
@@ -110,6 +126,16 @@ public class HandyWorkerService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
+		Collection<Application> applications = new LinkedList<>();
+		result.setApplications(applications);
+		Collection<Box> boxes = new LinkedList<>();
+		result.setBoxes(boxes);
+		Collection<Endorsement> endorsements = new LinkedList<>();
+		result.setEndorsements(endorsements);
+		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		result.setSocialIdentity(socialIdentity);
+		Collection<Tutorial> tutorials = new LinkedList<>();
+		result.setTutorials(tutorials);
 		result.setUserAccount(userAccount);
 
 		return result;
@@ -122,12 +148,12 @@ public class HandyWorkerService {
 		this.handyWorkerRepository.delete(handyWorker);
 	}
 
-	public HandyWorker findByUserAccount(final int userAccountId) {
+	public HandyWorker findHandyWorkerByUserAccount(final UserAccount userAccount) {
 		HandyWorker result;
 
-		Assert.isTrue(userAccountId != 0);
+		Assert.isTrue(userAccount.getId() != 0);
 
-		result = this.handyWorkerRepository.findByUserAccountId(userAccountId);
+		result = this.handyWorkerRepository.findByUserAccountId(userAccount.getId());
 
 		return result;
 	}
@@ -150,4 +176,106 @@ public class HandyWorkerService {
 		result = this.handyWorkerRepository.findByFixUpTaskId(fixUpTask.getId());
 		return result;
 	}
+
+	public Customer findCustomerProfile(FixUpTask fixUpTask) {
+		Customer res;
+		Assert.notNull(fixUpTask);
+		res = this.customerService.findCustomerByFixUpTask(fixUpTask);
+		Assert.notNull(res);
+		return res;
+	}
+
+	public Collection<FixUpTask> allCustomerFixUpTask(Customer customer) {
+		Collection<FixUpTask> res = new LinkedList<>();
+		Assert.notNull(customer);
+		res = fixUpTaskService.findFixUpTasksByCustomer(customer);
+		Assert.notNull(res);
+		return res;
+	}
+
+	public HandyWorker findHandyWorkerByApplication(Application application) {
+		HandyWorker res;
+		Assert.notNull(application);
+		res = handyWorkerRepository.findByApplicationId(application.getId());
+		Assert.notNull(res);
+		return res;
+	}
+
+	public FixUpTask saveHandyWorkerFixUpTask(final FixUpTask fixUpTask, Collection<Phase> phases) {
+		FixUpTask result, saved;
+		final UserAccount logedUserAccount;
+		Authority authority;
+
+		authority = new Authority();
+		authority.setAuthority("HANDYWORKER");
+		Assert.notNull(fixUpTask, "fixUpTask.not.null");
+		final HandyWorker handyWorker = findByFixUpTask(fixUpTask);
+
+		if (this.exists(fixUpTask.getId()) && this.applicationService
+				.findAcceptedHandyWorkerApplicationByFixUpTask(fixUpTask).getStatus().equals("ACCEPTED")) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "handyWorker.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(handyWorker.getUserAccount()), "handyWorker.notEqual.userAccount");
+			saved = this.fixUpTaskService.findOne(fixUpTask.getId());
+			Assert.notNull(saved, "fixUpTask.not.null");
+			Assert.isTrue(handyWorker.getUserAccount().isAccountNonLocked() && !(handyWorker.isSuspicious()),
+					"customer.notEqual.accountOrSuspicious");
+			if (!phases.isEmpty()) {
+				fixUpTask.getPhases().addAll(phases);
+			}
+			result = this.fixUpTaskService.save(fixUpTask);
+			Assert.notNull(result);
+			return result;
+		}else {
+		result = this.fixUpTaskService.findOne(fixUpTask.getId());
+		return result;
+		}
+	}
+	
+	public Application saveHandyWorkerApplication(final Application application, String comment) {
+		final Application result, saved;
+		Assert.notNull(application);
+		Assert.isTrue(application.getId() != 0);
+		final UserAccount userAccount = LoginService.getPrincipal();
+		final Date currentMoment = new Date(System.currentTimeMillis() - 1);
+		final Authority authority;
+		final UserAccount logedUserAccount;
+		authority = new Authority();
+		authority.setAuthority("HANDYWORKER");
+
+		if (this.exists(application.getId()) && application.getStatus().equals("PENDING")
+				&& userAccount.getAuthorities().contains(authority)
+				&& applicationService.findApplicationsByCustomer(this.customerService.findCustomerByApplication(application))
+						.contains(application)) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "customer.notLogged ");
+			Assert.isTrue(
+					logedUserAccount
+							.equals(this.customerService.findCustomerByApplication(application).getUserAccount()),
+					"handyWorker.notEqual.userAccount");
+			if (application.getApplicationMoment().compareTo(currentMoment) < 0) {
+				saved = this.applicationService.findOne(application.getId());
+				Assert.notNull(saved, "application.not.null");
+				if(!comment.equals(null)) {
+					application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
+				}
+				result = this.applicationService.save(application);
+				return result;
+			} else {
+				saved = this.applicationService.findOne(application.getId());
+				Assert.notNull(saved, "application.not.null");
+				if(!comment.equals(null)) {
+					application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
+				}
+				application.setStatus("ACCEPTED");
+				result = this.applicationService.save(application);
+				return result;
+			}
+		} else {
+
+			result = this.applicationService.save(application);
+			return result;
+		}
+	}
+
 }
