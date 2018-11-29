@@ -23,7 +23,7 @@ public class MessageService {
 	@Autowired
 	private ActorService actorservice;
 	@Autowired
-	private BoxServices boxservices;
+	private BoxService boxservices;
 
 	public Message save(Message entity) {
 		return messagerepository.save(entity);

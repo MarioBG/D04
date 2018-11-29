@@ -16,7 +16,7 @@ import domain.Actor;
 import domain.Box;
 import domain.Message;
 import services.ActorService;
-import services.BoxServices;
+import services.BoxService;
 import services.MessageService;
 import utilities.AbstractTest;
 
@@ -31,7 +31,7 @@ public class MessageServiceTest extends AbstractTest {
 	@Autowired
 	private ActorService actorservice;
 	@Autowired
-	private BoxServices boxservices;
+	private BoxService boxservices;
 	
 	@Test
 	public void moveMessage() {
