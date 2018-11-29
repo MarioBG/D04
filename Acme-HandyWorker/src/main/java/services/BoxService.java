@@ -122,10 +122,10 @@ public class BoxService {																			//TODO Revisar los casos de uso de e
 		notificationbox = this.create(true);
 		trashbox = this.create(true);
 
-		inbox.setName("in box");
-		outbox.setName("out box");
-		trashbox.setName("trash box");
-		notificationbox.setName("notification box");
+		inbox.setName("INBOX");
+		outbox.setName("OUTBOX");
+		trashbox.setName("TRASHBOX");
+		notificationbox.setName("SPAMBOX");
 
 		result.add(inbox);
 		result.add(outbox);
