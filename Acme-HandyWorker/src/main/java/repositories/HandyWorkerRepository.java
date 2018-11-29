@@ -23,5 +23,8 @@ public interface HandyWorkerRepository extends JpaRepository<HandyWorker, Intege
 
 	@Query("select a.handyWorker from Application a where a.status = 'ACCEPTED' group by a.handyWorker order by sum(a.fixUpTask.complaints.size)")
 	Collection<HandyWorker> topThreeHandyWorkersInTermsOfComplaints();
-	
+
+	@Query("select a.handyWorker from Customer c join c.fixUpTasks f join f.applications a where a.status = 'ACCEPTED' and c.userAccount.id = ?1")
+	Collection<HandyWorker> handyWorkersWorkedForCustomerWithUserAccountId(int id);
+
 }

@@ -181,7 +181,7 @@ public class AdministratorService {
 					while (good.find())
 						score++;
 					while (bad.find())
-						score++;
+						score--;
 				}
 		}
 		final List<Double> values = new ArrayList<Double>(ans.values());
@@ -206,7 +206,7 @@ public class AdministratorService {
 					while (good.find())
 						score++;
 					while (bad.find())
-						score++;
+						score--;
 				}
 		}
 		final List<Double> values = new ArrayList<Double>(ans.values());

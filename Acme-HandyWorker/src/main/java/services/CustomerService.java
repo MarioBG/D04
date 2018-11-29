@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import repositories.CustomerRepository;
+import security.Authority;
+import security.LoginService;
+import security.UserAccount;
 import domain.Application;
 import domain.Box;
 import domain.Complaint;
@@ -19,11 +23,8 @@ import domain.CreditCard;
 import domain.Customer;
 import domain.Endorsement;
 import domain.FixUpTask;
+import domain.HandyWorker;
 import domain.SocialIdentity;
-import repositories.CustomerRepository;
-import security.Authority;
-import security.LoginService;
-import security.UserAccount;
 
 @Service
 @Transactional
@@ -38,9 +39,12 @@ public class CustomerService {
 
 	@Autowired
 	private FixUpTaskService	fixUpTaskService;
-	
+
 	@Autowired
-	private ApplicationService applicationService;
+	private HandyWorkerService	handyWorkerService;
+
+	@Autowired
+	private ApplicationService	applicationService;
 
 
 	// Simple CRUD methods ----------------------------------------------------
@@ -71,7 +75,7 @@ public class CustomerService {
 
 	public Customer save(final Customer customer) {
 		Customer result, saved;
-		final UserAccount logedUserAccount;
+		UserAccount logedUserAccount;
 		Authority authority;
 		Md5PasswordEncoder encoder;
 
@@ -82,7 +86,7 @@ public class CustomerService {
 
 		if (this.exists(customer.getId())) {
 			logedUserAccount = LoginService.getPrincipal();
-			Assert.notNull(logedUserAccount, "customer.notLogged ");
+			Assert.notNull(logedUserAccount, "customer.notLogged");
 			Assert.isTrue(logedUserAccount.equals(customer.getUserAccount()), "customer.notEqual.userAccount");
 			saved = this.customerRepository.findOne(customer.getId());
 			Assert.notNull(saved, "customer.not.null");
@@ -103,6 +107,22 @@ public class CustomerService {
 
 	}
 
+	public void addToCustomerEndorsements(final Customer customer, final Endorsement e) {
+		final Authority authority = new Authority();
+		authority.setAuthority(Authority.CUSTOMER);
+		Assert.notNull(customer, "customer.not.null");
+		Assert.notNull(e, "customer.endorsement.not.null");
+		final UserAccount logedUserAccount = LoginService.getPrincipal();
+		Assert.notNull(logedUserAccount, "customer.notLogged");
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		final HandyWorker handyWorker = this.handyWorkerService.findByUserAccountId(e.getHandyWorker().getUserAccount().getId());
+		Assert.isTrue(this.handyWorkerService.findByCustomerUserAccountId(customer.getUserAccount().getId()).contains(handyWorker));
+		final Collection<Endorsement> endorsements = customer.getEndorsements();
+		endorsements.add(e);
+		customer.setEndorsements(endorsements);
+		this.customerRepository.save(customer);
+	}
+
 	public Customer create() {
 
 		Customer result;
@@ -119,15 +139,15 @@ public class CustomerService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
-		Collection<FixUpTask> fixUpTasks = new LinkedList<>();
+		final Collection<FixUpTask> fixUpTasks = new LinkedList<>();
 		result.setFixUpTasks(fixUpTasks);
-		Collection<Box> boxes = new LinkedList<>();
+		final Collection<Box> boxes = new LinkedList<>();
 		result.setBoxes(boxes);
-		Collection<Endorsement> endorsements = new LinkedList<>();
+		final Collection<Endorsement> endorsements = new LinkedList<>();
 		result.setEndorsements(endorsements);
-		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		final Collection<SocialIdentity> socialIdentity = new LinkedList<>();
 		result.setSocialIdentity(socialIdentity);
-		Collection<Complaint> complaints = new LinkedList<>();
+		final Collection<Complaint> complaints = new LinkedList<>();
 		result.setComplaints(complaints);
 		result.setUserAccount(userAccount);
 
@@ -148,6 +168,10 @@ public class CustomerService {
 		return res;
 	}
 
+	public Collection<Customer> findByHandyWorkerUserAccountId(final int id) {
+		return this.customerRepository.getCustomersForHandyWorkerWithUserAccountId(id);
+	}
+
 	public Customer findCustomerByUserAccount(final UserAccount userAccount) {
 		Assert.notNull(userAccount);
 		Assert.isTrue(userAccount.getId() != 0);
@@ -155,14 +179,25 @@ public class CustomerService {
 		return res;
 	}
 
+	public Customer findByPrincipal() {
+		Customer res;
+		UserAccount userAccount;
+		userAccount = LoginService.getPrincipal();
+		if (userAccount == null)
+			res = null;
+		else
+			res = this.customerRepository.findByUserAccountId(userAccount.getId());
+		return res;
+	}
+
 	public Customer findCustomerByFixUpTask(final FixUpTask fixUpTask) {
 		Assert.notNull(fixUpTask);
 		Assert.isTrue(fixUpTask.getId() != 0);
 		final Customer res = this.customerRepository.findCustomerByFixUpTaskId(fixUpTask.getId());
-		
+
 		return res;
 	}
-	
+
 	public FixUpTask findOneFixUptask(final int fixUpTaskId) {
 		Assert.isTrue(fixUpTaskId != 0);
 		final UserAccount logedUserAccount;
@@ -176,13 +211,13 @@ public class CustomerService {
 
 		result = this.fixUpTaskService.findOne(fixUpTaskId);
 		Assert.notNull(result);
-		Assert.isTrue(findCustomerByFixUpTask(result).getUserAccount().equals(logedUserAccount));
+		Assert.isTrue(this.findCustomerByFixUpTask(result).getUserAccount().equals(logedUserAccount));
 
 		return result;
 	}
 
 	public List<FixUpTask> findAllFixUpTask() {
-		return fixUpTaskService.findAll();
+		return this.fixUpTaskService.findAll();
 	}
 
 	public FixUpTask saveCustomerFixUpTask(final FixUpTask fixUpTask) {
@@ -193,7 +228,7 @@ public class CustomerService {
 		authority = new Authority();
 		authority.setAuthority("CUSTOMER");
 		Assert.notNull(fixUpTask, "fixUpTask.not.null");
-		final Customer customer = findCustomerByFixUpTask(fixUpTask);
+		final Customer customer = this.findCustomerByFixUpTask(fixUpTask);
 
 		if (this.exists(fixUpTask.getId())) {
 			logedUserAccount = LoginService.getPrincipal();
@@ -201,8 +236,7 @@ public class CustomerService {
 			Assert.isTrue(logedUserAccount.equals(customer.getUserAccount()), "customer.notEqual.userAccount");
 			saved = this.fixUpTaskService.findOne(fixUpTask.getId());
 			Assert.notNull(saved, "fixUpTask.not.null");
-			Assert.isTrue(customer.getUserAccount().isAccountNonLocked() && !(customer.isSuspicious()),
-					"customer.notEqual.accountOrSuspicious");
+			Assert.isTrue(customer.getUserAccount().isAccountNonLocked() && !(customer.isSuspicious()), "customer.notEqual.accountOrSuspicious");
 			result = this.fixUpTaskService.save(fixUpTask);
 			Assert.notNull(result);
 
@@ -213,7 +247,7 @@ public class CustomerService {
 		return result;
 
 	}
-	
+
 	public void deleteFixUpTask(final FixUpTask fixUpTask) {
 		Assert.isTrue(fixUpTask.getId() != 0);
 		UserAccount logedUserAccount;
@@ -222,13 +256,11 @@ public class CustomerService {
 		authority.setAuthority("CUSTOMER");
 		logedUserAccount = LoginService.getPrincipal();
 		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
-		Assert.isTrue(
-			findCustomerByFixUpTask(fixUpTask).getUserAccount().equals(logedUserAccount));
-			this.fixUpTaskService.delete(fixUpTask);
+		Assert.isTrue(this.findCustomerByFixUpTask(fixUpTask).getUserAccount().equals(logedUserAccount));
+		this.fixUpTaskService.delete(fixUpTask);
 	}
-	
 
-	public Application saveCustomerApplication(final Application application, String comment, CreditCard creditCard) {
+	public Application saveCustomerApplication(final Application application, final String comment, final CreditCard creditCard) {
 		final Application result, saved;
 		Assert.notNull(application);
 		Assert.isTrue(application.getId() != 0);
@@ -239,38 +271,36 @@ public class CustomerService {
 		authority = new Authority();
 		authority.setAuthority("CUSTOMER");
 
-		if (this.exists(application.getId()) && application.getStatus().equals("PENDING")
-				&& userAccount.getAuthorities().contains(authority)
-				&& applicationService.findApplicationsByCustomer(findCustomerByApplication(application))
-						.contains(application)) {
+		if (this.exists(application.getId()) && application.getStatus().equals("PENDING") && userAccount.getAuthorities().contains(authority)
+			&& this.applicationService.findApplicationsByCustomer(this.findCustomerByApplication(application)).contains(application)) {
 			logedUserAccount = LoginService.getPrincipal();
 			Assert.notNull(logedUserAccount, "customer.notLogged ");
-			Assert.isTrue(
-					logedUserAccount
-							.equals(findCustomerByApplication(application).getUserAccount()),
-					"customer.notEqual.userAccount");
+			Assert.isTrue(logedUserAccount.equals(this.findCustomerByApplication(application).getUserAccount()), "customer.notEqual.userAccount");
 			if (application.getApplicationMoment().compareTo(currentMoment) < 0) {
-				saved = applicationService.findOne(application.getId());
+				saved = this.applicationService.findOne(application.getId());
 				Assert.notNull(saved, "application.not.null");
 				application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
 				application.setStatus("REJECTED");
-				result = applicationService.save(application);
+				result = this.applicationService.save(application);
 				return result;
 			} else {
-				saved = applicationService.findOne(application.getId());
+				saved = this.applicationService.findOne(application.getId());
 				Assert.notNull(saved, "application.not.null");
-				if(!comment.equals(null)) {
-				application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
-				}
+				if (!comment.equals(null))
+					application.getComments().add(logedUserAccount.getUsername() + ": - " + comment);
 				application.setCreditCard(creditCard);
 				application.setStatus("ACCEPTED");
-				result = applicationService.save(application);
+				result = this.applicationService.save(application);
 				return result;
 			}
 		} else {
 
-			result = applicationService.save(application);
+			result = this.applicationService.save(application);
 			return result;
 		}
+	}
+
+	public Customer findByUserAccountId(final int id) {
+		return this.customerRepository.findByUserAccountId(id);
 	}
 }
