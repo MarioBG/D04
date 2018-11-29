@@ -13,31 +13,43 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Assert;
 
 import domain.Application;
+import domain.Complaint;
 import domain.CreditCard;
 import domain.Customer;
 import domain.FixUpTask;
+import domain.Report;
 import security.LoginService;
 import services.ApplicationService;
+import services.ComplaintService;
 import services.CustomerService;
 import services.FixUpTaskService;
+import services.ReportService;
 import utilities.AbstractTest;
 
 @ContextConfiguration(locations = {
-	"classpath:spring/junit.xml", "classpath:spring/datasource.xml", "classpath:spring/config/packages.xml"
-})
+	"classpath:spring/junit.xml", "classpath:spring/datasource.xml",
+		"classpath:spring/config/packages.xml" })
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 public class CustomerServiceTest extends AbstractTest {
 
 	@Autowired
-	private CustomerService	customerService;
-	
+	private CustomerService customerService;
+
 	@Autowired
 	private FixUpTaskService fixuptaskService;
-	
+
 	@Autowired
 	private ApplicationService applicationService;
 
+	@Autowired
+	private ComplaintService complaintService;
+
+	@Autowired
+	private ReportService reportService;
+
+//	@Autowired
+//	private NoteService noteService;
 
 	@Test
 	public void saveCustomerTest() {
@@ -95,7 +107,7 @@ public class CustomerServiceTest extends AbstractTest {
 		Assert.isNull(customer.getMiddleName());
 		Assert.isNull(customer.getSurname());
 	}
-	
+
 	@Test
 	public void saveCustomerFixUpTaskTest() {
 		final FixUpTask created;
@@ -109,7 +121,7 @@ public class CustomerServiceTest extends AbstractTest {
 		Assert.isTrue(this.fixuptaskService.findAll().contains(saved));
 		Assert.isTrue(saved.getDescription().equals("Test"));
 	}
-	
+
 	@Test
 	public void saveApplicationCustomerTest() {
 		Application created;
@@ -162,7 +174,7 @@ public class CustomerServiceTest extends AbstractTest {
 
 		return result;
 	}
-	
+
 	private FixUpTask copyFixUpTask(final FixUpTask fixUpTask) {
 		FixUpTask result;
 
@@ -183,4 +195,59 @@ public class CustomerServiceTest extends AbstractTest {
 		result.setVersion(fixUpTask.getVersion());
 		return result;
 	}
+
+	@Test
+	public void saveComplaintTest() {
+		Complaint complaint, saved;
+		Collection<Complaint> complaints;
+		this.authenticate(customerService.findAll().iterator().next().getUserAccount().getUsername());
+		complaint = this.complaintService.findAll().iterator().next();
+		complaint.setDescription("Description");
+		saved = this.complaintService.save(complaint);
+		complaints = this.complaintService.findAll();
+		Assert.isTrue(complaints.contains(saved));
+	}
+
+	@Test
+	public void findAllComplaintTest() {
+		Collection<Complaint> result;
+		result = this.complaintService.findAll();
+		Assert.notNull(result);
+	}
+
+	@Test
+	public void findOneComplaintTest() {
+		final Complaint complaint = this.complaintService.findAll().iterator().next();
+		final int complaintId = complaint.getId();
+		Assert.isTrue(complaintId != 0);
+		Complaint result;
+		result = this.complaintService.findOne(complaintId);
+		Assert.notNull(result);
+	}
+
+	@Test
+	public void findOneReportTest() {
+		final Report report = this.reportService.findNotFinalModeReports().iterator().next();
+		Assert.notNull(report);
+		Report result;
+		result = this.customerService.findReport(report.getId());
+		Assert.notNull(result);
+	}
+
+	@Test
+	public void customersWith10PercentMoreAvgFixUpTask() {
+		Collection<Customer> res = this.customerService.customersWith10PercentMoreAvgFixUpTask();
+		Assert.notNull(res);
+	}
+//	
+//	@Test
+//	public void saveNoteTest() {
+//		Note note = noteService.findAll().iterator().next();
+//		this.authenticate("customer2");
+//		Customer customer = customerService.findCustomerByUserAccount(LoginService.getPrincipal());
+//		Collection<Report> rep = reportService.findReportByCustomerUserAccount(customer.getUserAccount());
+//		Report report = rep.iterator().next();
+//		Note saved = customerService.saveNote(note, report);
+//		Assert.notNull(saved);
+//	}
 }

@@ -17,7 +17,7 @@ import domain.Actor;
 import domain.Box;
 import domain.Message;
 import services.ActorService;
-import services.BoxService;
+import services.BoxServices;
 import utilities.AbstractTest;
 
 @ContextConfiguration(locations = { "classpath:spring/junit.xml", "classpath:spring/datasource.xml",
@@ -27,7 +27,7 @@ import utilities.AbstractTest;
 public class BoxServiceTest extends AbstractTest {
 
 	@Autowired
-	private BoxService boxService;
+	private BoxServices boxService;
 	@Autowired
 	private ActorService actorservice;
 	

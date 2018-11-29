@@ -1,15 +1,9 @@
 
 package services;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
@@ -17,18 +11,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import domain.Actor;
+import domain.Administrator;
+import domain.Box;
+import domain.Category;
+import domain.Configuration;
+import domain.Customer;
+import domain.HandyWorker;
+import domain.Message;
+import domain.Referee;
+import domain.SocialIdentity;
+import domain.Sponsor;
+import domain.Warranty;
 import repositories.AdministratorRepository;
 import security.Authority;
 import security.LoginService;
 import security.UserAccount;
-import domain.Actor;
-import domain.Administrator;
-import domain.Box;
-import domain.Customer;
-import domain.Endorsement;
-import domain.HandyWorker;
-import domain.Message;
-import domain.SocialIdentity;
 
 @Service
 @Transactional
@@ -39,34 +37,52 @@ public class AdministratorService {
 	@Autowired
 	private AdministratorRepository	administratorRepository;
 
+	// Supporting services ----------------------------------------------------
+	
 	@Autowired
 	private ActorService			actorservice;
-
+	
 	@Autowired
-	private CustomerService			customerService;
-
+	LoginService loginservice;
+	
 	@Autowired
-	private HandyWorkerService		handyWorkerService;
-
+	private MessageService messageservice;
+	
 	@Autowired
-	LoginService					loginservice;
-
+	private WarrantyService warrantyService;
+	
 	@Autowired
-	private MessageService			messageservice;
-
+	private CategoryService categoryService;
+	
 	@Autowired
-	private EndorsementService		endorsementService;
+	private FixUpTaskService fixUpTaskService;
+	
+	@Autowired
+	private ApplicationService applicationService;
+	
+	@Autowired
+	private CustomerService customerService;
+	
+	@Autowired
+	private HandyWorkerService handyWorkerService;
+	
+	@Autowired
+	private RefereeService refereeService;
+	
+	@Autowired
+	private SponsorService sponsorService;
+	
+	@Autowired
+	private ConfigurationService configurationService;
 
-
-	// Supporting services ----------------------------------------------------
 
 	// Simple CRUD methods ----------------------------------------------------
-
-	public void sendAll(final Message message) {
+	
+	public void sendAll(Message message) {
 		Assert.notNull(message);
-
-		final Actor self = this.actorservice.findSelf();
-		this.messageservice.sendMessage(this.actorservice.findAllUsername(self.getId()), message);
+		
+		Actor self = actorservice.findSelf();
+		messageservice.sendMessage(actorservice.findAllUsername(self.getId()), message);
 	}
 
 	public Collection<Administrator> findAll() {
@@ -125,6 +141,29 @@ public class AdministratorService {
 			Assert.isTrue(administrator.isSuspicious() == false, "administrator.notSuspicious.false");
 			administrator.getUserAccount().setPassword(encoder.encodePassword(administrator.getUserAccount().getPassword(), null));
 			administrator.getUserAccount().setEnabled(true);
+			Collection<Message> messages = new LinkedList<>();
+			Box inbox = new Box();
+			inbox.setName("INBOX");
+			inbox.setPredefined(true);
+			inbox.setMessages(messages);
+			Box outbox = new Box();
+			outbox.setName("OUTBOX");
+			outbox.setPredefined(true);
+			outbox.setMessages(messages);
+			Box trashbox = new Box();
+			trashbox.setName("TRASHBOX");
+			trashbox.setPredefined(true);
+			trashbox.setMessages(messages);
+			Box spambox = new Box();
+			spambox.setName("INBOX");
+			spambox.setPredefined(true);
+			spambox.setMessages(messages);
+			Collection<Box> boxes = new LinkedList<Box>();
+			boxes.add(inbox);
+			boxes.add(outbox);
+			boxes.add(trashbox);
+			boxes.add(spambox);
+			administrator.setBoxes(boxes);
 
 		}
 
@@ -150,9 +189,9 @@ public class AdministratorService {
 		userAccount.addAuthority(authority);
 		userAccount.setEnabled(true);
 
-		final Collection<Box> boxes = new LinkedList<>();
+		Collection<Box> boxes = new LinkedList<>();
 		result.setBoxes(boxes);
-		final Collection<SocialIdentity> socialIdentity = new LinkedList<>();
+		Collection<SocialIdentity> socialIdentity = new LinkedList<>();
 		result.setSocialIdentity(socialIdentity);
 		result.setUserAccount(userAccount);
 
@@ -165,61 +204,300 @@ public class AdministratorService {
 		Assert.isTrue(this.administratorRepository.exists(administrator.getId()));
 		this.administratorRepository.delete(administrator);
 	}
-
-	public Map<Customer, Double> calculateCustomerScore() {
-
-		final Pattern badPattern = Pattern.compile("");										//TODO bad words y good words
-		final Pattern goodPattern = Pattern.compile("");
-		Matcher good, bad = null;
-		final Map<Customer, Double> ans = new HashMap<Customer, Double>();
-		for (final Customer c : this.customerService.findAll()) {
-			Double score = 0d;
-			for (final Endorsement e : this.endorsementService.findAll())
-				if (e.getCustomer() != null && e.getCustomer().equals(c)) {
-					good = goodPattern.matcher(e.getComment());
-					bad = badPattern.matcher(e.getComment());
-					while (good.find())
-						score++;
-					while (bad.find())
-						score--;
-				}
-		}
-		final List<Double> values = new ArrayList<Double>(ans.values());
-		Collections.sort(values);
-		for (final Customer c : ans.keySet())
-			ans.put(c, (-1 + ((ans.get(c) - values.get(0)) * (2))) / (values.get(values.size() - 1) - values.get(0)));
-		return ans;
-	}
-
-	public Map<HandyWorker, Double> calculateHandyWorkerScore() {
-
-		final Pattern badPattern = Pattern.compile("");										//TODO bad words y good words
-		final Pattern goodPattern = Pattern.compile("");
-		Matcher good, bad = null;
-		final Map<HandyWorker, Double> ans = new HashMap<HandyWorker, Double>();
-		for (final HandyWorker c : this.handyWorkerService.findAll()) {
-			Double score = 0d;
-			for (final Endorsement e : this.endorsementService.findAll())
-				if (e.getCustomer() != null && e.getCustomer().equals(c)) {
-					good = goodPattern.matcher(e.getComment());
-					bad = badPattern.matcher(e.getComment());
-					while (good.find())
-						score++;
-					while (bad.find())
-						score--;
-				}
-		}
-		final List<Double> values = new ArrayList<Double>(ans.values());
-		Collections.sort(values);
-		for (final HandyWorker c : ans.keySet())
-			ans.put(c, (-1 + ((ans.get(c) - values.get(0)) * (2))) / (values.get(values.size() - 1) - values.get(0)));
-		return ans;
-	}
-	public UserAccount changeEnabledActor(final UserAccount userAccount) {
+	
+	public UserAccount changeEnabledActor(UserAccount userAccount) {
 		Assert.notNull(userAccount);
-
+		
 		userAccount.setEnabled(!userAccount.isEnabled());
 		return this.loginservice.save(userAccount);
 	}
+	
+	public Warranty saveWarranty(Warranty warranty) {
+		Warranty result, saved;
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		
+		if(exists(warranty.getId()) && logedUserAccount.getAuthorities().contains(authority) && !warranty.isFinalMode()) {
+			saved = this.warrantyService.findOne(warranty.getId());
+			Assert.notNull(saved);
+			result = this.warrantyService.save(warranty);
+			Assert.notNull(result);
+			return result;
+		}
+		
+		result = this.warrantyService.findOne(warranty.getId());
+		return result;
+	}
 
+	public List<Warranty> findAllWarranties() {
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		return warrantyService.findAll();
+	}
+
+	public Warranty findOneWarranty(Integer warrantyId) {
+		Assert.isTrue(exists(warrantyId));
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		return warrantyService.findOne(warrantyId);
+	}
+
+	public void deleteWarranty(Warranty warranty) {
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority) && !warranty.isFinalMode());
+		warrantyService.delete(warranty);
+	}
+
+	public Category saveCategory(Category category) {
+		Category result, saved;
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		
+		if(exists(category.getId()) && logedUserAccount.getAuthorities().contains(authority)) {
+			saved = this.categoryService.findOne(category.getId());
+			Assert.notNull(saved);
+			result = this.categoryService.save(category);
+			Assert.notNull(result);
+			return result;
+		}
+		
+		result = this.categoryService.findOne(category.getId());
+		return result;
+	}
+
+	public List<Category> findAllCategories() {
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		return categoryService.findAll();
+	}
+
+	public Category findOneCategory(Integer categoryId) {
+		Assert.isTrue(exists(categoryId));
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		return categoryService.findOne(categoryId);
+	}
+
+	public void deleteCategory(Category category) {
+		Assert.notNull(category);
+		Assert.isTrue(exists(category.getId()));
+		
+		UserAccount logedUserAccount;
+		Authority authority;
+		authority = new Authority();
+		authority.setAuthority("ADMINISTRATOR");
+		logedUserAccount = LoginService.getPrincipal();
+		Assert.isTrue(logedUserAccount.getAuthorities().contains(authority));
+		categoryService.delete(category);
+	}
+	
+	public Collection<Double> findAvgMinMaxStdDvtFixUpTasksPerUser() {
+		Collection<Double> res = fixUpTaskService.findAvgMinMaxStdDvtFixUpTasksPerUser();
+		return res;
+	}
+	
+	public Collection<Double> findAvgMinMaxStrDvtApplicationPerFixUpTask() {
+		Collection<Double> res = applicationService.findAvgMinMaxStrDvtApplicationPerFixUpTask();
+		return res;
+	}
+	
+	public Collection<Double> findAvgMinMaxStrDvtPerFixUpTask() {
+		Collection<Double> res = fixUpTaskService.findAvgMinMaxStrDvtPerFixUpTask();
+		return res;
+	}
+	
+	public Collection<Double> findAvgMinMaxStrDvtPerApplication() {
+		Collection<Double> res = applicationService.findAvgMinMaxStrDvtPerApplication();
+		return res;
+	}
+	
+	public Double ratioOfPendingApplications() {
+		Double res = this.applicationService.ratioOfPendingApplications();
+		return res;
+	}
+	
+	public Double ratioOfAcceptedApplications() {
+		Double res = this.applicationService.ratioOfAcceptedApplications();
+		return res;
+	}
+	
+	public Double ratioOfRejectedApplications() {
+		Double res = this.applicationService.ratioOfRejectedApplications();
+		return res;
+	}
+	
+	public Double ratioOfRejectedApplicationsCantChange() {
+		Double res = this.applicationService.ratioOfRejectedApplicationsCantChange();
+		return res;
+	}
+	
+	public Collection<Customer> customersWith10PercentMoreAvgFixUpTask() {
+		Collection<Customer> res = this.customerService.customersWith10PercentMoreAvgFixUpTask();
+		return res;
+	}
+	
+	public Collection<HandyWorker> handyWorkersWith10PercentMoreAvgApplicatios() {
+		Collection<HandyWorker> res = this.handyWorkerService.handyWorkersWith10PercentMoreAvgApplicatios();
+		return res;
+	}
+
+	public Sponsor saveSponsor(final Sponsor sponsor) {
+		Sponsor result, saved;
+		final UserAccount logedUserAccount;
+		Authority authority1;
+		Authority authority2;
+		Md5PasswordEncoder encoder;
+
+		encoder = new Md5PasswordEncoder();
+		authority1 = new Authority();
+		authority1.setAuthority("REFEREE");
+		authority2 = new Authority();
+		authority2.setAuthority("ADMINISTRATOR");
+		Assert.notNull(sponsor, "sponsor.not.null");
+
+		if (this.exists(sponsor.getId())) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "sponsor.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(sponsor.getUserAccount()), "sponsor.notEqual.userAccount");
+			saved = this.sponsorService.findOne(sponsor.getId());
+			Assert.notNull(saved, "referee.not.null");
+			Assert.isTrue(saved.getUserAccount().getUsername().equals(sponsor.getUserAccount().getUsername()), "sponsor.notEqual.username");
+			Assert.isTrue(sponsor.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "sponsor.notEqual.password");
+			Assert.isTrue(sponsor.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && sponsor.isSuspicious() == saved.isSuspicious(), "referee.notEqual.accountOrSuspicious");
+
+		} else {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "admin.notLogged ");
+			Assert.isTrue(logedUserAccount.getAuthorities().contains(authority2), "admin.notEqual.userAccount");
+			Assert.isTrue(sponsor.isSuspicious() == false, "admin.notSuspicious.false");
+			sponsor.getUserAccount().setPassword(encoder.encodePassword(sponsor.getUserAccount().getPassword(), null));
+			sponsor.getUserAccount().setEnabled(true);
+			Collection<Message> messages = new LinkedList<>();
+			Box inbox = new Box();
+			inbox.setName("INBOX");
+			inbox.setPredefined(true);
+			inbox.setMessages(messages);
+			Box outbox = new Box();
+			outbox.setName("OUTBOX");
+			outbox.setPredefined(true);
+			outbox.setMessages(messages);
+			Box trashbox = new Box();
+			trashbox.setName("TRASHBOX");
+			trashbox.setPredefined(true);
+			trashbox.setMessages(messages);
+			Box spambox = new Box();
+			spambox.setName("INBOX");
+			spambox.setPredefined(true);
+			spambox.setMessages(messages);
+			Collection<Box> boxes = new LinkedList<Box>();
+			boxes.add(inbox);
+			boxes.add(outbox);
+			boxes.add(trashbox);
+			boxes.add(spambox);
+			sponsor.setBoxes(boxes);
+
+		}
+
+		result = this.sponsorService.save(sponsor);
+
+		return result;
+
+	}
+	
+	public Referee saveReferee(final Referee referee) {
+		Referee result, saved;
+		final UserAccount logedUserAccount;
+		Authority authority1;
+		Authority authority2;
+		Md5PasswordEncoder encoder;
+
+		encoder = new Md5PasswordEncoder();
+		authority1 = new Authority();
+		authority1.setAuthority("REFEREE");
+		authority2 = new Authority();
+		authority2.setAuthority("ADMINISTRATOR");
+		Assert.notNull(referee, "referee.not.null");
+
+		if (this.exists(referee.getId())) {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "referee.notLogged ");
+			Assert.isTrue(logedUserAccount.equals(referee.getUserAccount()), "referee.notEqual.userAccount");
+			saved = this.refereeService.findOne(referee.getId());
+			Assert.notNull(saved, "referee.not.null");
+			Assert.isTrue(saved.getUserAccount().getUsername().equals(referee.getUserAccount().getUsername()), "referee.notEqual.username");
+			Assert.isTrue(referee.getUserAccount().getPassword().equals(saved.getUserAccount().getPassword()), "referee.notEqual.password");
+			Assert.isTrue(referee.getUserAccount().isAccountNonLocked() == saved.getUserAccount().isAccountNonLocked() && referee.isSuspicious() == saved.isSuspicious(), "referee.notEqual.accountOrSuspicious");
+
+		} else {
+			logedUserAccount = LoginService.getPrincipal();
+			Assert.notNull(logedUserAccount, "admin.notLogged ");
+			Assert.isTrue(logedUserAccount.getAuthorities().contains(authority2), "admin.notEqual.userAccount");
+			Assert.isTrue(referee.isSuspicious() == false, "admin.notSuspicious.false");
+			referee.getUserAccount().setPassword(encoder.encodePassword(referee.getUserAccount().getPassword(), null));
+			referee.getUserAccount().setEnabled(true);
+			Collection<Message> messages = new LinkedList<>();
+			Box inbox = new Box();
+			inbox.setName("INBOX");
+			inbox.setPredefined(true);
+			inbox.setMessages(messages);
+			Box outbox = new Box();
+			outbox.setName("OUTBOX");
+			outbox.setPredefined(true);
+			outbox.setMessages(messages);
+			Box trashbox = new Box();
+			trashbox.setName("TRASHBOX");
+			trashbox.setPredefined(true);
+			trashbox.setMessages(messages);
+			Box spambox = new Box();
+			spambox.setName("INBOX");
+			spambox.setPredefined(true);
+			spambox.setMessages(messages);
+			Collection<Box> boxes = new LinkedList<Box>();
+			boxes.add(inbox);
+			boxes.add(outbox);
+			boxes.add(trashbox);
+			boxes.add(spambox);
+			referee.setBoxes(boxes);
+
+		}
+
+		result = this.refereeService.save(referee);
+
+		return result;
+
+	}
+	
+	public Configuration saveConfiguration(Configuration configuration) {
+		Assert.notNull(configuration);
+		Assert.isTrue(configurationService.exists(configuration.getId()));
+		Configuration saved = configurationService.save(configuration);
+		Assert.notNull(saved);
+		return saved;
+	}
 }
